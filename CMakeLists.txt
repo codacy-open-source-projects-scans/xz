@@ -371,7 +371,7 @@ if(ENABLE_THREADS)
             #
             # The Win95 threading lacks thread-safe one-time initialization
             # function.
-            if (ENABLE_SMALL)
+            if(ENABLE_SMALL)
                 message(SEND_ERROR "Threading method win95 and ENABLE_SMALL "
                                    "cannot be used at the same time")
             endif()
@@ -762,6 +762,25 @@ check_c_source_compiles("
     HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR)
 cmake_pop_check_state()
 tuklib_add_definition_if(liblzma HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR)
+
+# Check for __attribute__((__ifunc__())) support.
+option(ALLOW_ATTR_IFUNC "Allow use of __attribute__((__ifunc__())) if \
+supported by the system" ON)
+
+if(ALLOW_ATTR_IFUNC)
+    cmake_push_check_state()
+    set(CMAKE_REQUIRED_FLAGS "-Werror")
+    check_c_source_compiles("
+            static void func(void) { return; }
+            static void (*resolve_func(void)) (void) { return func; }
+            void func_ifunc(void)
+                    __attribute__((__ifunc__(\"resolve_func\")));
+            int main(void) { return 0; }
+        "
+        HAVE_FUNC_ATTRIBUTE_IFUNC)
+    cmake_pop_check_state()
+    tuklib_add_definition_if(liblzma HAVE_FUNC_ATTRIBUTE_IFUNC)
+endif()
 
 # cpuid.h
 check_include_file(cpuid.h HAVE_CPUID_H)
