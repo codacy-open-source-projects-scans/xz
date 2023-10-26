@@ -83,7 +83,7 @@ parse_options(const char *str, const option_map *opts,
 			*value++ = '\0';
 
 		if (value == NULL || value[0] == '\0')
-			message_fatal(_("%s: Options must be `name=value' "
+			message_fatal(_("%s: Options must be 'name=value' "
 					"pairs separated with commas"), str);
 
 		// Look for the option name from the option map.
@@ -241,7 +241,8 @@ enum {
 };
 
 
-static void lzma_attribute((__noreturn__))
+tuklib_attr_noreturn
+static void
 error_lzma_preset(const char *valuestr)
 {
 	message_fatal(_("Unsupported LZMA1/LZMA2 preset: %s"), valuestr);

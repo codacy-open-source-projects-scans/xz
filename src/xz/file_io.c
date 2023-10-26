@@ -29,15 +29,42 @@ static bool warn_fchown;
 #	include <utime.h>
 #endif
 
-#ifdef HAVE_CAPSICUM
-#	ifdef HAVE_SYS_CAPSICUM_H
-#		include <sys/capsicum.h>
-#	else
-#		include <sys/capability.h>
-#	endif
+#ifdef HAVE_CAP_RIGHTS_LIMIT
+#	include <sys/capsicum.h>
+#endif
+
+#ifdef HAVE_LINUX_LANDLOCK_H
+#	include <linux/landlock.h>
+#	include <sys/syscall.h>
 #endif
 
 #include "tuklib_open_stdxxx.h"
+
+#ifdef _MSC_VER
+#	ifdef _WIN64
+		typedef __int64 ssize_t;
+#	else
+		typedef int ssize_t;
+#	endif
+
+	typedef int mode_t;
+#	define S_IRUSR _S_IREAD
+#	define S_IWUSR _S_IWRITE
+
+#	define setmode _setmode
+#	define open _open
+#	define close _close
+#	define lseek _lseeki64
+#	define unlink _unlink
+
+	// The casts are to silence warnings.
+	// The sizes are known to be small enough.
+#	define read(fd, buf, size) _read(fd, buf, (unsigned int)(size))
+#	define write(fd, buf, size) _write(fd, buf, (unsigned int)(size))
+
+#	define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
+#	define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#endif
 
 #ifndef O_BINARY
 #	define O_BINARY 0
@@ -188,8 +215,8 @@ io_sandbox_enter(int src_fd)
 	// characters have been loaded. This is needed at least with glibc.
 	tuklib_mbstr_width(dummy_str, NULL);
 
-#ifdef HAVE_CAPSICUM
-	// Capsicum needs FreeBSD 10.0 or later.
+#ifdef HAVE_CAP_RIGHTS_LIMIT
+	// Capsicum needs FreeBSD 10.2 or later.
 	cap_rights_t rights;
 
 	if (cap_enter())
@@ -231,6 +258,59 @@ io_sandbox_enter(int src_fd)
 
 	(void)src_fd;
 
+#elif defined(HAVE_LINUX_LANDLOCK_H)
+	int landlock_abi = syscall(SYS_landlock_create_ruleset,
+			(void *)NULL, 0, LANDLOCK_CREATE_RULESET_VERSION);
+
+	if (landlock_abi > 0) {
+		// We support ABI versions 1-3.
+		if (landlock_abi > 3)
+			landlock_abi = 3;
+
+		// We want to set all supported flags in handled_access_fs.
+		// This way the ruleset will initially forbid access to all
+		// actions that the available Landlock ABI version supports.
+		// Exceptions can be added using landlock_add_rule(2) to
+		// allow certain actions on certain files or directories.
+		//
+		// The same flag values are used on all archs. ABI v2 and v3
+		// both add one new flag.
+		//
+		// First in ABI v1: LANDLOCK_ACCESS_FS_EXECUTE = 1ULL << 0
+		// Last in ABI v1: LANDLOCK_ACCESS_FS_MAKE_SYM = 1ULL << 12
+		// Last in ABI v2: LANDLOCK_ACCESS_FS_REFER = 1ULL << 13
+		// Last in ABI v3: LANDLOCK_ACCESS_FS_TRUNCATE = 1ULL << 14
+		//
+		// This makes it simple to set the mask based on the ABI
+		// version and we don't need to care which flags are #defined
+		// in the installed <linux/landlock.h>.
+		const struct landlock_ruleset_attr attr = {
+			.handled_access_fs = (1ULL << (12 + landlock_abi)) - 1
+		};
+
+		const int ruleset_fd = syscall(SYS_landlock_create_ruleset,
+				&attr, sizeof(attr), 0U);
+		if (ruleset_fd < 0)
+			goto error;
+
+		// All files we need should have already been openend. Thus,
+		// we don't need to add any rules using landlock_add_rule(2)
+		// before activating the sandbox.
+		//
+		// NOTE: It's possible that the hack at the beginning of this
+		// function isn't be good enough. It tries to get translations
+		// and libc-specific files loaded but if it's not good enough
+		// then perhaps a Landlock rule to allow reading from /usr
+		// and/or the xz installation prefix would be needed.
+		//
+		// prctl(PR_SET_NO_NEW_PRIVS, ...) was already called in
+		// main() so we don't do it here again.
+		if (syscall(SYS_landlock_restrict_self, ruleset_fd, 0U) != 0)
+			goto error;
+	}
+
+	(void)src_fd;
+
 #else
 #	error ENABLE_SANDBOX is defined but no sandboxing method was found.
 #endif
@@ -240,7 +320,7 @@ io_sandbox_enter(int src_fd)
 	return;
 
 error:
-#ifdef HAVE_CAPSICUM
+#ifdef HAVE_CAP_RIGHTS_LIMIT
 	// If a kernel is configured without capability mode support or
 	// used in an emulator that does not implement the capability
 	// system calls, then the Capsicum system calls will fail and set
@@ -407,7 +487,7 @@ io_copy_attrs(const file_pair *pair)
 		message_warning(_("%s: Cannot set the file group: %s"),
 				pair->dest_name, strerror(errno));
 		// We can still safely copy some additional permissions:
-		// `group' must be at least as strict as `other' and
+		// 'group' must be at least as strict as 'other' and
 		// also vice versa.
 		//
 		// NOTE: After this, the owner of the source file may
@@ -944,20 +1024,41 @@ io_open_dest_real(file_pair *pair)
 		}
 	}
 
-#ifndef TUKLIB_DOSLIKE
-	// dest_st isn't used on DOS-like systems except as a dummy
-	// argument to io_unlink(), so don't fstat() on such systems.
 	if (fstat(pair->dest_fd, &pair->dest_st)) {
 		// If fstat() really fails, we have a safe fallback here.
-#	if defined(__VMS)
+#if defined(__VMS)
 		pair->dest_st.st_ino[0] = 0;
 		pair->dest_st.st_ino[1] = 0;
 		pair->dest_st.st_ino[2] = 0;
-#	else
+#else
 		pair->dest_st.st_dev = 0;
 		pair->dest_st.st_ino = 0;
-#	endif
-	} else if (try_sparse && opt_mode == MODE_DECOMPRESS) {
+#endif
+	}
+#if defined(TUKLIB_DOSLIKE) && !defined(__DJGPP__)
+	// Check that the output file is a regular file. We open with O_EXCL
+	// but that doesn't prevent open()/_open() on Windows from opening
+	// files like "con" or "nul".
+	//
+	// With DJGPP this check is done with stat() even before opening
+	// the output file. That method or a variant of it doesn't work on
+	// Windows because on Windows stat()/_stat64() sets st.st_mode so
+	// that S_ISREG(st.st_mode) will be true even for special files.
+	// With fstat()/_fstat64() it works.
+	else if (pair->dest_fd != STDOUT_FILENO
+			&& !S_ISREG(pair->dest_st.st_mode)) {
+		message_error("%s: Destination is not a regular file",
+				pair->dest_name);
+
+		// dest_fd needs to be reset to -1 to keep io_close() working.
+		(void)close(pair->dest_fd);
+		pair->dest_fd = -1;
+
+		free(pair->dest_name);
+		return true;
+	}
+#elif !defined(TUKLIB_DOSLIKE)
+	else if (try_sparse && opt_mode == MODE_DECOMPRESS) {
 		// When writing to standard output, we need to be extra
 		// careful:
 		//  - It may be connected to something else than

@@ -4,6 +4,8 @@
 ## This file has been put into the public domain.
 ## You can do whatever you want with this file.
 ##
+## Note: There is no check for COND_CHECK_CRC32 because
+## currently crc32 is always enabled.
 
 EXTRA_DIST += \
 	check/crc32_tablegen.c \
@@ -12,9 +14,8 @@ EXTRA_DIST += \
 liblzma_la_SOURCES += \
 	check/check.c \
 	check/check.h \
-	check/crc_macros.h
+	check/crc_common.h
 
-if COND_CHECK_CRC32
 if COND_SMALL
 liblzma_la_SOURCES += check/crc32_small.c
 else
@@ -26,6 +27,8 @@ if COND_ASM_X86
 liblzma_la_SOURCES += check/crc32_x86.S
 else
 liblzma_la_SOURCES += check/crc32_fast.c
+if COND_CRC_CLMUL
+liblzma_la_SOURCES += check/crc_clmul.c
 endif
 endif
 endif

@@ -21,7 +21,10 @@
 #include <signal.h>
 #include <locale.h>
 #include <stdio.h>
-#include <unistd.h>
+
+#ifndef _MSC_VER
+#	include <unistd.h>
+#endif
 
 #include "tuklib_gettext.h"
 #include "tuklib_progname.h"
@@ -31,6 +34,10 @@
 #if defined(_WIN32) && !defined(__CYGWIN__)
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
+#endif
+
+#ifdef _MSC_VER
+#	define fileno _fileno
 #endif
 
 #ifndef STDIN_FILENO
@@ -45,7 +52,8 @@
 #	define STDERR_FILENO (fileno(stderr))
 #endif
 
-#if defined(HAVE_CAPSICUM) || defined(HAVE_PLEDGE)
+#if defined(HAVE_CAP_RIGHTS_LIMIT) || defined(HAVE_PLEDGE) \
+		|| defined(HAVE_LINUX_LANDLOCK_H)
 #	define ENABLE_SANDBOX 1
 #endif
 

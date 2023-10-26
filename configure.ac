@@ -310,7 +310,7 @@ case $enable_microlzma in
 		;;
 	*)
 		AC_MSG_RESULT([])
-		AC_MSG_ERROR([--enable-microlzma accepts only `yes' or `no'.])
+		AC_MSG_ERROR([--enable-microlzma accepts only 'yes' or 'no'.])
 		;;
 esac
 AM_CONDITIONAL(COND_MICROLZMA, test "x$enable_microlzma" = xyes)
@@ -364,7 +364,7 @@ case $enable_assembler in
 		;;
 	*)
 		AC_MSG_RESULT([])
-		AC_MSG_ERROR([--enable-assembler accepts only `yes', `no', or `x86' (32-bit).])
+		AC_MSG_ERROR([--enable-assembler accepts only 'yes', 'no', or 'x86' (32-bit).])
 		;;
 esac
 AM_CONDITIONAL(COND_ASM_X86, test "x$enable_assembler" = xx86)
@@ -393,7 +393,7 @@ if test "x$enable_small" = xyes; then
 	AC_DEFINE([HAVE_SMALL], [1], [Define to 1 if optimizing for size.])
 elif test "x$enable_small" != xno; then
 	AC_MSG_RESULT([])
-	AC_MSG_ERROR([--enable-small accepts only `yes' or `no'])
+	AC_MSG_ERROR([--enable-small accepts only 'yes' or 'no'])
 fi
 AC_MSG_RESULT([$enable_small])
 AM_CONDITIONAL(COND_SMALL, test "x$enable_small" = xyes)
@@ -405,8 +405,8 @@ AM_CONDITIONAL(COND_SMALL, test "x$enable_small" = xyes)
 
 AC_MSG_CHECKING([if threading support is wanted])
 AC_ARG_ENABLE([threads], AS_HELP_STRING([--enable-threads=METHOD],
-		[Supported METHODS are `yes', `no', `posix', `win95', and
-		`vista'. The default is `yes'. Using `no' together with
+		[Supported METHODS are 'yes', 'no', 'posix', 'win95', and
+		'vista'. The default is 'yes'. Using 'no' together with
 		--enable-small makes liblzma thread unsafe.]),
 	[], [enable_threads=yes])
 
@@ -433,7 +433,7 @@ case $enable_threads in
 		;;
 	*)
 		AC_MSG_RESULT([])
-		AC_MSG_ERROR([--enable-threads only accepts `yes', `no', `posix', `win95', or `vista'])
+		AC_MSG_ERROR([--enable-threads only accepts 'yes', 'no', 'posix', 'win95', or 'vista'])
 		;;
 esac
 
@@ -519,20 +519,24 @@ AM_CONDITIONAL([COND_DOC], [test x$enable_doc != xno])
 AC_MSG_CHECKING([if sandboxing should be used])
 AC_ARG_ENABLE([sandbox], [AS_HELP_STRING([--enable-sandbox=METHOD],
 		[Sandboxing METHOD can be
-		`auto', `no', `capsicum', or `pledge'.
-		The default is `auto' which enables sandboxing if
+		'auto', 'no', 'capsicum', 'pledge', or 'landlock'.
+		The default is 'auto' which enables sandboxing if
 		a supported sandboxing method is found.])],
 	[], [enable_sandbox=auto])
-case $enable_sandbox in
-	auto)
+case $enable_xz-$enable_sandbox in
+	no-*)
+		enable_sandbox=no
+		AC_MSG_RESULT([no, --disable-xz was used])
+		;;
+	*-auto)
 		AC_MSG_RESULT([maybe (autodetect)])
 		;;
-	no | capsicum | pledge)
+	*-no | *-capsicum | *-pledge | *-landlock)
 		AC_MSG_RESULT([$enable_sandbox])
 		;;
 	*)
 		AC_MSG_RESULT([])
-		AC_MSG_ERROR([--enable-sandbox only accepts `auto', `no', `capsicum', or `pledge'.])
+		AC_MSG_ERROR([--enable-sandbox only accepts 'auto', 'no', 'capsicum', 'pledge', or 'landlock'.])
 		;;
 esac
 
@@ -622,21 +626,10 @@ AS_CASE([$enable_threads],
 		AC_DEFINE([MYTHREAD_POSIX], [1],
 			[Define to 1 when using POSIX threads (pthreads).])
 
-		# These are nice to have but not mandatory.
-		#
-		# FIXME: xz uses clock_gettime if it is available and can do
-		# it even when threading is disabled. Moving this outside
-		# of pthread detection may be undesirable because then
-		# liblzma may get linked against librt even when librt isn't
-		# needed by liblzma.
+		# This is nice to have but not mandatory.
 		OLD_CFLAGS=$CFLAGS
 		CFLAGS="$CFLAGS $PTHREAD_CFLAGS"
-		AC_SEARCH_LIBS([clock_gettime], [rt])
-		AC_CHECK_FUNCS([clock_gettime pthread_condattr_setclock])
-		AC_CHECK_DECL([CLOCK_MONOTONIC], [AC_DEFINE(
-			[HAVE_CLOCK_MONOTONIC], [1], [Define to 1 if
-			`CLOCK_MONOTONIC' is declared in <time.h>.])], [],
-			[[#include <time.h>]])
+		AC_CHECK_FUNCS([pthread_condattr_setclock])
 		CFLAGS=$OLD_CFLAGS
 	],
 	[win95], [
@@ -832,17 +825,22 @@ AC_C_BIGENDIAN
 
 # __attribute__((__constructor__)) can be used for one-time initializations.
 # Use -Werror because some compilers accept unknown attributes and just
-# give a warning. If it works this should give no warnings, even
-# clang -Weverything should be fine.
-# dnl This doesn't need AC_LANG_SOURCE, minimal code is enough.
+# give a warning.
+#
+# FIXME? Unfortunately -Werror can cause trouble if CFLAGS contains options
+# that produce warnings for unrelated reasons. For example, GCC and Clang
+# support -Wunused-macros which will warn about "#define _GNU_SOURCE 1"
+# which will be among the #defines that Autoconf inserts to the beginning of
+# the test program. There seems to be no nice way to prevent Autoconf from
+# inserting the any defines to the test program.
 AC_MSG_CHECKING([if __attribute__((__constructor__)) can be used])
 have_func_attribute_constructor=no
 OLD_CFLAGS="$CFLAGS"
 CFLAGS="$CFLAGS -Werror"
-AC_COMPILE_IFELSE([
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 	__attribute__((__constructor__))
 	static void my_constructor_func(void) { return; }
-], [
+]])], [
 	AC_DEFINE([HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR], [1],
 		[Define to 1 if __attribute__((__constructor__))
 		is supported for functions.])
@@ -878,16 +876,32 @@ if test "x$enable_ifunc" = xyes ; then
 	OLD_CFLAGS="$CFLAGS"
 	CFLAGS="$CFLAGS -Werror"
 	AC_MSG_CHECKING([if __attribute__((__ifunc__())) can be used])
-	AC_COMPILE_IFELSE([
+	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 		static void func(void) { return; }
 		static void (*resolve_func (void)) (void) { return func; }
 		void func_ifunc (void)
 				__attribute__((__ifunc__("resolve_func")));
-	], [
+		/*
+		 * 'clang -Wall' incorrectly warns that resolve_func is
+		 * unused (-Wunused-function). Correct assembly output is
+		 * still produced. This problem exists at least in Clang
+		 * versions 4 to 17. The following silences the bogus warning:
+		 */
+		void make_clang_quiet(void);
+		void make_clang_quiet(void) { resolve_func()(); }
+	]])], [
 		AC_DEFINE([HAVE_FUNC_ATTRIBUTE_IFUNC], [1],
 			[Define to 1 if __attribute__((__ifunc__()))
 			is supported for functions.])
 		AC_MSG_RESULT([yes])
+
+		# ifunc explicitly does not work with -fsanitize=address.
+		# If configured, it will result in a liblzma build that
+		# will fail when liblzma is loaded at runtime (when the
+		# ifunc resolver executes).
+		AS_CASE([$CFLAGS], [*-fsanitize=*], [AC_MSG_ERROR([
+    CFLAGS contains '-fsanitize=' which is incompatible with ifunc.
+    Use --disable-ifunc when using '-fsanitize'.])])
 	], [
 		AC_MSG_RESULT([no])
 	])
@@ -902,6 +916,22 @@ fi
 
 # Gnulib replacements as needed
 gl_GETOPT
+
+# If clock_gettime() is available, liblzma with pthreads may use it, and
+# xz may use it even when threading support is disabled. In XZ Utils 5.4.x
+# and older, configure checked for clock_gettime() only when using pthreads.
+# This way non-threaded builds of liblzma didn't get a useless dependency on
+# librt which further had a dependency on libpthread. Avoiding these was
+# useful when a small build was needed, for example, for initramfs use.
+#
+# The above reasoning is thoroughly obsolete: On GNU/Linux, librt hasn't
+# been needed for clock_gettime() since glibc 2.17 (2012-12-25).
+# Solaris 10 needs librt but Solaris 11 doesn't anymore.
+AC_SEARCH_LIBS([clock_gettime], [rt])
+AC_CHECK_FUNCS([clock_gettime])
+AC_CHECK_DECL([CLOCK_MONOTONIC], [AC_DEFINE([HAVE_CLOCK_MONOTONIC], [1],
+	[Define to 1 if 'CLOCK_MONOTONIC' is declared in <time.h>.])], [],
+	[[#include <time.h>]])
 
 # Find the best function to set timestamps.
 AC_CHECK_FUNCS([futimens futimes futimesat utimes _futime utime], [break])
@@ -1022,21 +1052,45 @@ __m128i my_clmul(__m128i a)
 			[Define to 1 if _mm_set_epi64x and
 			_mm_clmulepi64_si128 are usable.
 			See configure.ac for details.])
-		AC_MSG_RESULT([yes])
+		enable_clmul_crc=yes
 	], [
-		AC_MSG_RESULT([no])
+		enable_clmul_crc=no
 	])
+	AC_MSG_RESULT([$enable_clmul_crc])
 ])
+AM_CONDITIONAL([COND_CRC_CLMUL], [test "x$enable_clmul_crc" = xyes])
 
 # Check for sandbox support. If one is found, set enable_sandbox=found.
+#
+# About -fsanitize: Of our three sandbox methods, only Landlock is
+# incompatible with -fsanitize. FreeBSD 13.2 with Capsicum was tested with
+# -fsanitize=address,undefined and had no issues. OpenBSD (as of version
+# 7.4) has minimal support for process instrumentation. OpenBSD does not
+# distribute the additional libraries needed (libasan, libubsan, etc.) with
+# GCC or Clang needed for runtime sanitization support and instead only
+# support -fsanitize-minimal-runtime for minimal undefined behavior
+# sanitization. This minimal support is compatible with our use of the
+# Pledge sandbox. So only Landlock will result in a build that cannot
+# compress or decompress a single file to standard out.
 AS_CASE([$enable_sandbox],
 	[auto | capsicum], [
-		AX_CHECK_CAPSICUM([enable_sandbox=found], [:])
+		AC_CHECK_FUNCS([cap_rights_limit], [enable_sandbox=found])
 	]
 )
 AS_CASE([$enable_sandbox],
 	[auto | pledge], [
-		AC_CHECK_FUNCS([pledge], [enable_sandbox=found ; break])
+		AC_CHECK_FUNCS([pledge], [enable_sandbox=found])
+	]
+)
+AS_CASE([$enable_sandbox],
+	[auto | landlock], [
+		AC_CHECK_HEADERS([linux/landlock.h], [
+			enable_sandbox=found
+
+			AS_CASE([$CFLAGS], [*-fsanitize=*], [AC_MSG_ERROR([
+    CFLAGS contains '-fsanitize=' which is incompatible with the Landlock
+    sandboxing. Use --disable-sandbox when using '-fsanitize'.])])
+		])
 	]
 )
 
@@ -1086,7 +1140,6 @@ AS_IF([test "$GCC" = yes], [
 			-Wall \
 			-Wextra \
 			-Wvla \
-			-Wc99-c11-compat \
 			-Wformat=2 \
 			-Winit-self \
 			-Wmissing-include-dirs \
@@ -1132,7 +1185,7 @@ AS_IF([test "$GCC" = yes], [
 		OLD_CFLAGS="$CFLAGS"
 		CFLAGS="$CFLAGS $NEW_FLAG -Werror"
 		AC_COMPILE_IFELSE([AC_LANG_SOURCE(
-				[void foo(void); void foo(void) { }])], [
+				[[void foo(void); void foo(void) { }]])], [
 			AM_CFLAGS="$AM_CFLAGS $NEW_FLAG"
 			AC_MSG_RESULT([yes])
 		], [

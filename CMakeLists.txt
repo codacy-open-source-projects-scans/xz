@@ -10,8 +10,6 @@
 # On some platforms this builds also xz and xzdec, but these are
 # highly experimental and meant for testing only:
 #   - No large file support on those 32-bit platforms that need it
-#   - No replacement getopt_long(), libc must have it
-#   - No sandboxing support
 #   - No translations
 #
 # Other missing things:
@@ -46,7 +44,7 @@
 #
 #############################################################################
 
-cmake_minimum_required(VERSION 3.13...3.26 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13...3.27 FATAL_ERROR)
 
 include(CMakePushCheckState)
 include(CheckIncludeFile)
@@ -94,19 +92,21 @@ set(CMAKE_MACOSX_BUNDLE OFF)
 # "syntax error" from windres. Using --use-temp-file prevents windres
 # from using popen() and this seems to fix the problem.
 #
-# llvm-windres claims to be compatible with GNU windres but with that
-# the \x20 results in "XZx20Utils" in the compiled binary. (At the
-# same time it works correctly with clang (the C compiler).) The option
-# --use-temp-file makes no difference.
+# llvm-windres from Clang/LLVM 16.0.6 and older: The \x20 results
+# in "XZx20Utils" in the compiled binary. The option --use-temp-file
+# makes no difference.
 #
-# CMake 3.25 doesn't have CMAKE_RC_COMPILER_ID so we rely on
-# CMAKE_C_COMPILER_ID. If Clang is used together with GNU windres
-# then it will fail, but this way the risk of a bad string in
-# the binary should be fairly low.
-if(WIN32 AND CMAKE_C_COMPILER_ID STREQUAL "GNU")
-    # Use workarounds with GNU windres. The \x20 in PACKAGE_NAME works
-    # with gcc too so we don't need to worry how to pass different flags
-    # to windres and gcc.
+# llvm-windres 17.0.0 and later: It emulates GNU windres more accurately, so
+# the workarounds used with GNU windres must be used with llvm-windres too.
+#
+# CMake 3.27 doesn't have CMAKE_RC_COMPILER_ID so we rely on
+# CMAKE_C_COMPILER_ID.
+if((MINGW OR CYGWIN OR MSYS) AND (
+        NOT CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
+        CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "17"))
+    # Use workarounds with GNU windres and llvm-windres >= 17.0.0. The \x20
+    # in PACKAGE_NAME works with gcc and clang too so we don't need to worry
+    # how to pass different flags to windres and the C compiler.
     string(APPEND CMAKE_RC_FLAGS " --use-temp-file")
     set(PACKAGE_NAME "XZ\\x20Utils")
 else()
@@ -150,32 +150,30 @@ tuklib_integer(ALL)
 
 # Check for clock_gettime(). Do this before checking for threading so
 # that we know there if CLOCK_MONOTONIC is available.
-if(NOT WIN32)
-    check_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
+check_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME)
 
-    if(NOT HAVE_CLOCK_GETTIME)
-        # With glibc <= 2.17 or Solaris 10 this needs librt.
-        # Add librt for the next check for HAVE_CLOCK_GETTIME. If it is
-        # found after including the library, we know that librt is required.
-        list(INSERT CMAKE_REQUIRED_LIBRARIES 0 rt)
-        check_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME_LIBRT)
+if(NOT HAVE_CLOCK_GETTIME)
+    # With glibc <= 2.17 or Solaris 10 this needs librt.
+    # Add librt for the next check for HAVE_CLOCK_GETTIME. If it is
+    # found after including the library, we know that librt is required.
+    list(INSERT CMAKE_REQUIRED_LIBRARIES 0 rt)
+    check_symbol_exists(clock_gettime time.h HAVE_CLOCK_GETTIME_LIBRT)
 
-        # If it was found now, add librt to all targets and keep it in
-        # CMAKE_REQUIRED_LIBRARIES for further tests too.
-        if(HAVE_CLOCK_GETTIME_LIBRT)
-            link_libraries(rt)
-        else()
-            list(REMOVE_AT CMAKE_REQUIRED_LIBRARIES 0)
-        endif()
+    # If it was found now, add librt to all targets and keep it in
+    # CMAKE_REQUIRED_LIBRARIES for further tests too.
+    if(HAVE_CLOCK_GETTIME_LIBRT)
+        link_libraries(rt)
+    else()
+        list(REMOVE_AT CMAKE_REQUIRED_LIBRARIES 0)
     endif()
+endif()
 
-    if(HAVE_CLOCK_GETTIME OR HAVE_CLOCK_GETTIME_LIBRT)
-        add_compile_definitions(HAVE_CLOCK_GETTIME)
+if(HAVE_CLOCK_GETTIME OR HAVE_CLOCK_GETTIME_LIBRT)
+    add_compile_definitions(HAVE_CLOCK_GETTIME)
 
-        # Check if CLOCK_MONOTONIC is available for clock_gettime().
-        check_symbol_exists(CLOCK_MONOTONIC time.h HAVE_CLOCK_MONOTONIC)
-        tuklib_add_definition_if(ALL HAVE_CLOCK_MONOTONIC)
-    endif()
+    # Check if CLOCK_MONOTONIC is available for clock_gettime().
+    check_symbol_exists(CLOCK_MONOTONIC time.h HAVE_CLOCK_MONOTONIC)
+    tuklib_add_definition_if(ALL HAVE_CLOCK_MONOTONIC)
 endif()
 
 # Options for new enough GCC or Clang on any arch or operating system:
@@ -216,7 +214,7 @@ add_library(liblzma
     src/liblzma/api/lzma/vli.h
     src/liblzma/check/check.c
     src/liblzma/check/check.h
-    src/liblzma/check/crc_macros.h
+    src/liblzma/check/crc_common.h
     src/liblzma/common/block_util.c
     src/liblzma/common/common.c
     src/liblzma/common/common.h
@@ -270,7 +268,7 @@ set(ADDITIONAL_CHECK_TYPES "${ADDITIONAL_SUPPORTED_CHECKS}" CACHE STRING
 
 foreach(CHECK IN LISTS ADDITIONAL_CHECK_TYPES)
     if(NOT CHECK IN_LIST ADDITIONAL_SUPPORTED_CHECKS)
-        message(SEND_ERROR "'${CHECK}' is not a supported check type")
+        message(FATAL_ERROR "'${CHECK}' is not a supported check type")
     endif()
 endforeach()
 
@@ -320,7 +318,7 @@ foreach(MF IN LISTS MATCH_FINDERS)
         string(TOUPPER "${MF}" MF_UPPER)
         add_compile_definitions("HAVE_MF_${MF_UPPER}")
     else()
-        message(SEND_ERROR "'${MF}' is not a supported match finder")
+        message(FATAL_ERROR "'${MF}' is not a supported match finder")
     endif()
 endforeach()
 
@@ -329,32 +327,38 @@ endforeach()
 # Threading #
 #############
 
-# Supported thread methods:
+# Supported threading methods:
 # ON    - autodetect the best threading method. The autodetection will
 #         prefer Windows threading (win95 or vista) over posix if both are
 #         available. vista threads will be used over win95 unless it is a
 #         32-bit build.
 # OFF   - Disable threading.
-# posix - Use posix threading, or throw an error if not available.
+# posix - Use posix threading (pthreads), or throw an error if not available.
 # win95 - Use Windows win95 threading, or throw an error if not available.
 # vista - Use Windows vista threading, or throw an error if not available.
-set(SUPPORTED_THREAD_METHODS ON OFF posix win95 vista)
+set(SUPPORTED_THREADING_METHODS ON OFF posix win95 vista)
 
 set(ENABLE_THREADS ON CACHE STRING
-        "Threading method type to support. Set to 'OFF' to disable threading")
+    "Threading method: Set to 'ON' to autodetect, 'OFF' to disable threading.")
 
 # Create dropdown in CMake GUI since only 1 threading method is possible
 # to select in a build.
 set_property(CACHE ENABLE_THREADS
-        PROPERTY STRINGS "${SUPPORTED_THREAD_METHODS}")
+             PROPERTY STRINGS "${SUPPORTED_THREADING_METHODS}")
 
 # This is a flag variable set when win95 threads are used. We must ensure
 # the combination of enable_small and win95 threads is not used without a
 # compiler supporting attribute __constructor__.
 set(USE_WIN95_THREADS OFF)
 
-if(NOT ENABLE_THREADS IN_LIST SUPPORTED_THREAD_METHODS)
-    message(SEND_ERROR "'${ENABLE_THREADS}' is not a supported thread type")
+# This is a flag variable set when posix threads (pthreads) are used.
+# It's needed when creating liblzma-config.cmake where dependency on
+# Threads::Threads is only needed with pthreads.
+set(USE_POSIX_THREADS OFF)
+
+if(NOT ENABLE_THREADS IN_LIST SUPPORTED_THREADING_METHODS)
+    message(FATAL_ERROR "'${ENABLE_THREADS}' is not a supported "
+                        "threading method")
 endif()
 
 if(ENABLE_THREADS)
@@ -364,10 +368,11 @@ if(ENABLE_THREADS)
     find_package(Threads REQUIRED)
 
     # If both Windows and posix threading are available, prefer Windows.
+    # Note that on Cygwin CMAKE_USE_WIN32_THREADS_INIT is false.
     if(CMAKE_USE_WIN32_THREADS_INIT AND NOT ENABLE_THREADS STREQUAL "posix")
         if(ENABLE_THREADS STREQUAL "win95"
                 OR (ENABLE_THREADS STREQUAL "ON"
-                AND CMAKE_SIZEOF_VOID_P EQUAL 4))
+                    AND CMAKE_SIZEOF_VOID_P EQUAL 4))
             # Use Windows 95 (and thus XP) compatible threads.
             # This avoids use of features that were added in
             # Windows Vista. This is used for 32-bit x86 builds for
@@ -380,25 +385,26 @@ if(ENABLE_THREADS)
         endif()
     elseif(CMAKE_USE_PTHREADS_INIT)
         if(ENABLE_THREADS STREQUAL "posix" OR ENABLE_THREADS STREQUAL "ON")
-            # Overwrite ENABLE_THREADS in case it was set to "ON".
             # The threading library only needs to be explicitly linked
             # for posix threads, so this is needed for creating
             # liblzma-config.cmake later.
-            set(ENABLE_THREADS "posix")
+            set(USE_POSIX_THREADS ON)
 
             target_link_libraries(liblzma Threads::Threads)
             add_compile_definitions(MYTHREAD_POSIX)
 
-            # Check if pthread_condattr_setclock() exists to use CLOCK_MONOTONIC.
+            # Check if pthread_condattr_setclock() exists to
+            # use CLOCK_MONOTONIC.
             if(HAVE_CLOCK_MONOTONIC)
-                list(INSERT CMAKE_REQUIRED_LIBRARIES 0 "${CMAKE_THREAD_LIBS_INIT}")
+                list(INSERT CMAKE_REQUIRED_LIBRARIES 0
+                     "${CMAKE_THREAD_LIBS_INIT}")
                 check_symbol_exists(pthread_condattr_setclock pthread.h
                                     HAVE_PTHREAD_CONDATTR_SETCLOCK)
                 tuklib_add_definition_if(ALL HAVE_PTHREAD_CONDATTR_SETCLOCK)
             endif()
         else()
             message(SEND_ERROR
-                    "Windows thread method requested, but a compatible "
+                    "Windows threading method was requested but a compatible "
                     "library could not be found")
         endif()
     else()
@@ -443,13 +449,13 @@ set(ENCODERS "${SUPPORTED_FILTERS}" CACHE STRING "Encoders to support")
 
 # If LZMA2 is enabled, then LZMA1 must also be enabled.
 if(NOT "lzma1" IN_LIST ENCODERS AND "lzma2" IN_LIST ENCODERS)
-    message(SEND_ERROR "LZMA2 encoder requires that LZMA1 is also enabled")
+    message(FATAL_ERROR "LZMA2 encoder requires that LZMA1 is also enabled")
 endif()
 
 # If LZMA1 is enabled, then at least one match finder must be enabled.
 if(MATCH_FINDERS STREQUAL "" AND "lzma1" IN_LIST ENCODERS)
-    message(SEND_ERROR "At least 1 match finder is required for an "
-                       "LZ-based encoder")
+    message(FATAL_ERROR "At least 1 match finder is required for an "
+                        "LZ-based encoder")
 endif()
 
 set(HAVE_DELTA_CODER OFF)
@@ -467,7 +473,7 @@ foreach(ENCODER IN LISTS ENCODERS)
         string(TOUPPER "${ENCODER}" ENCODER_UPPER)
         add_compile_definitions("HAVE_ENCODER_${ENCODER_UPPER}")
     else()
-        message(SEND_ERROR "'${ENCODER}' is not a supported encoder")
+        message(FATAL_ERROR "'${ENCODER}' is not a supported encoder")
     endif()
 endforeach()
 
@@ -569,7 +575,7 @@ foreach(DECODER IN LISTS DECODERS)
         string(TOUPPER "${DECODER}" DECODER_UPPER)
         add_compile_definitions("HAVE_DECODER_${DECODER_UPPER}")
     else()
-        message(SEND_ERROR "'${DECODER}' is not a supported decoder")
+        message(FATAL_ERROR "'${DECODER}' is not a supported decoder")
     endif()
 endforeach()
 
@@ -684,8 +690,8 @@ option(MICROLZMA_DECODER
 
 if(MICROLZMA_ENCODER)
     if(NOT "lzma1" IN_LIST ENCODERS)
-        message(SEND_ERROR "The LZMA1 encoder is required to support the "
-                           "MicroLZMA encoder")
+        message(FATAL_ERROR "The LZMA1 encoder is required to support the "
+                            "MicroLZMA encoder")
     endif()
 
     target_sources(liblzma PRIVATE src/liblzma/common/microlzma_encoder.c)
@@ -693,8 +699,8 @@ endif()
 
 if(MICROLZMA_DECODER)
     if(NOT "lzma1" IN_LIST DECODERS)
-        message(SEND_ERROR "The LZMA1 decoder is required to support the "
-                           "MicroLZMA decoder")
+        message(FATAL_ERROR "The LZMA1 decoder is required to support the "
+                            "MicroLZMA decoder")
     endif()
 
     target_sources(liblzma PRIVATE src/liblzma/common/microlzma_decoder.c)
@@ -710,8 +716,8 @@ option(LZIP_DECODER "Support lzip decoder" ON)
 if(LZIP_DECODER)
     # If lzip decoder support is requested, make sure LZMA1 decoder is enabled.
     if(NOT "lzma1" IN_LIST DECODERS)
-        message(SEND_ERROR "The LZMA1 decoder is required to support the "
-                           "lzip decoder")
+        message(FATAL_ERROR "The LZMA1 decoder is required to support the "
+                            "lzip decoder")
     endif()
 
     add_compile_definitions(HAVE_LZIP_DECODER)
@@ -788,10 +794,26 @@ if(ALLOW_ATTR_IFUNC)
             void func_ifunc(void)
                     __attribute__((__ifunc__(\"resolve_func\")));
             int main(void) { return 0; }
+            /*
+             * 'clang -Wall' incorrectly warns that resolve_func is
+             * unused (-Wunused-function). Correct assembly output is
+             * still produced. This problem exists at least in Clang
+             * versions 4 to 17. The following silences the bogus warning:
+             */
+            void make_clang_quiet(void);
+            void make_clang_quiet(void) { resolve_func()(); }
         "
         HAVE_FUNC_ATTRIBUTE_IFUNC)
     cmake_pop_check_state()
     tuklib_add_definition_if(liblzma HAVE_FUNC_ATTRIBUTE_IFUNC)
+
+    if(HAVE_FUNC_ATTRIBUTE_IFUNC AND CMAKE_C_FLAGS MATCHES "-fsanitize=")
+        message(SEND_ERROR
+                "CMAKE_C_FLAGS or the environment variable CFLAGS "
+                "contains '-fsanitize=' which is incompatible "
+                "with ifunc. Use -DALLOW_ATTR_IFUNC=OFF "
+                "as an argument to 'cmake' when using '-fsanitize'.")
+    endif()
 endif()
 
 # cpuid.h
@@ -817,23 +839,33 @@ if(HAVE_IMMINTRIN_H)
     tuklib_add_definition_if(liblzma HAVE__MM_MOVEMASK_EPI8)
 
     # CLMUL intrinsic:
-    check_c_source_compiles("
-            #include <immintrin.h>
-            #if defined(__e2k__) && __iset__ < 6
-            #   error
-            #endif
-            #if (defined(__GNUC__) || defined(__clang__)) && !defined(__EDG__)
-            __attribute__((__target__(\"ssse3,sse4.1,pclmul\")))
-            #endif
-            __m128i my_clmul(__m128i a)
-            {
-                const __m128i b = _mm_set_epi64x(1, 2);
-                return _mm_clmulepi64_si128(a, b, 0);
-            }
-            int main(void) { return 0; }
-    "
-    HAVE_USABLE_CLMUL)
-    tuklib_add_definition_if(liblzma HAVE_USABLE_CLMUL)
+    option(ALLOW_CLMUL_CRC "Allow carryless multiplication for CRC \
+calculation if supported by the system" ON)
+
+    if(ALLOW_CLMUL_CRC)
+        check_c_source_compiles("
+                #include <immintrin.h>
+                #if defined(__e2k__) && __iset__ < 6
+                #   error
+                #endif
+                #if (defined(__GNUC__) || defined(__clang__)) \
+                        && !defined(__EDG__)
+                __attribute__((__target__(\"ssse3,sse4.1,pclmul\")))
+                #endif
+                __m128i my_clmul(__m128i a)
+                {
+                    const __m128i b = _mm_set_epi64x(1, 2);
+                    return _mm_clmulepi64_si128(a, b, 0);
+                }
+                int main(void) { return 0; }
+        "
+        HAVE_USABLE_CLMUL)
+
+        if(HAVE_USABLE_CLMUL)
+            target_sources(liblzma PRIVATE src/liblzma/check/crc_clmul.c)
+            target_compile_definitions(liblzma PRIVATE HAVE_USABLE_CLMUL)
+        endif()
+    endif()
 endif()
 
 # Support -fvisiblity=hidden when building shared liblzma.
@@ -931,7 +963,7 @@ if(NOT TARGET LibLZMA::LibLZMA)
 endif()
 ")
 
-if(ENABLE_THREADS STREQUAL "posix")
+if(USE_POSIX_THREADS)
     set(LZMA_CONFIG_CONTENTS
 "include(CMakeFindDependencyMacro)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
@@ -984,18 +1016,74 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
 
 
 #############################################################################
-# getopt_long
+# libgnu (getopt_long)
 #############################################################################
 
-# The command line tools needs this.
+# This mirrors how the Autotools build system handles the getopt_long
+# replacement, calling the object library libgnu since the replacement
+# version comes from Gnulib.
+add_library(libgnu OBJECT)
+
+# CMake requires that even an object library must have at least once source
+# file. So we give it a header file that results in no output files.
+target_sources(libgnu PRIVATE lib/getopt.in.h)
+
+# The Ninja Generator requires setting the linker language since it cannot
+# guess the programming language of just a header file. Setting this
+# property avoids needing an empty .c file or an non-empty unnecessary .c
+# file.
+set_target_properties(libgnu PROPERTIES LINKER_LANGUAGE C)
+
+# Create /lib directory in the build directory and add it to the include path.
+file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/lib")
+target_include_directories(libgnu PUBLIC "${CMAKE_CURRENT_BINARY_DIR}/lib")
+
+# Include /lib from the source directory. It does no harm even if none of
+# the Gnulib replacements are used.
+target_include_directories(libgnu PUBLIC lib)
+
+# The command line tools need getopt_long in order to parse arguments. If
+# the system does not have a getopt_long implementation we can use the one
+# from Gnulib instead.
 check_symbol_exists(getopt_long getopt.h HAVE_GETOPT_LONG)
+
+if(NOT HAVE_GETOPT_LONG)
+    # Set the __GETOPT_PREFIX definition to "rpl_" (replacement) to avoid
+    # name conflicts with libc symbols. The same prefix is set if using
+    # the Autotools build (m4/getopt.m4).
+    target_compile_definitions(libgnu PUBLIC "__GETOPT_PREFIX=rpl_")
+
+    # Create a custom copy command to copy the getopt header to the build
+    # directory and re-copy it if it is updated. (Gnulib does it this way
+    # because it allows choosing which .in.h files to actually use in the
+    # build. We need just getopt.h so this is a bit overcomplicated for
+    # a single header file only.)
+    add_custom_command(OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/lib/getopt.h"
+        COMMAND "${CMAKE_COMMAND}" -E copy
+            "${CMAKE_CURRENT_SOURCE_DIR}/lib/getopt.in.h"
+            "${CMAKE_CURRENT_BINARY_DIR}/lib/getopt.h"
+        MAIN_DEPENDENCY "${CMAKE_CURRENT_SOURCE_DIR}/lib/getopt.in.h"
+        VERBATIM)
+
+    target_sources(libgnu PRIVATE
+        lib/getopt1.c
+        lib/getopt.c
+        lib/getopt_int.h
+        lib/getopt-cdefs.h
+        lib/getopt-core.h
+        lib/getopt-ext.h
+        lib/getopt-pfx-core.h
+        lib/getopt-pfx-ext.h
+        "${CMAKE_CURRENT_BINARY_DIR}/lib/getopt.h"
+    )
+endif()
 
 
 #############################################################################
 # xzdec
 #############################################################################
 
-if(HAVE_GETOPT_LONG AND HAVE_DECODERS)
+if(HAVE_DECODERS AND (NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900))
     add_executable(xzdec
         src/common/sysdefs.h
         src/common/tuklib_common.h
@@ -1013,7 +1101,7 @@ if(HAVE_GETOPT_LONG AND HAVE_DECODERS)
         src/liblzma/api
     )
 
-    target_link_libraries(xzdec PRIVATE liblzma)
+    target_link_libraries(xzdec PRIVATE liblzma libgnu)
 
     if(WIN32)
         # Add the Windows resource file for xzdec.exe.
@@ -1041,7 +1129,7 @@ endif()
 # xz
 #############################################################################
 
-if(NOT MSVC AND HAVE_GETOPT_LONG)
+if(NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900)
     add_executable(xz
         src/common/mythread.h
         src/common/sysdefs.h
@@ -1095,7 +1183,7 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
         )
     endif()
 
-    target_link_libraries(xz PRIVATE liblzma)
+    target_link_libraries(xz PRIVATE liblzma libgnu)
 
     target_compile_definitions(xz PRIVATE ASSUME_RAM=128)
 
@@ -1163,6 +1251,86 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
                 endif()
             endif()
         endif()
+    endif()
+
+    # Sandboxing:
+    # ON        Use sandboxing if a supported method is available in the OS.
+    # OFF       Disable sandboxing.
+    # capsicum  Require Capsicum (FreeBSD >= 10.2) and fail if not found.
+    # pledge    Require pledge(2) (OpenBSD >= 5.9) and fail if not found.
+    # landlock  Require Landlock (Linux >= 5.13) and fail if not found.
+    set(SUPPORTED_SANDBOX_METHODS ON OFF capsicum pledge landlock)
+
+    set(ENABLE_SANDBOX ON CACHE STRING "Sandboxing method to use in 'xz'")
+
+    set_property(CACHE ENABLE_SANDBOX
+                 PROPERTY STRINGS "${SUPPORTED_SANDBOX_METHODS}")
+
+    if(NOT ENABLE_SANDBOX IN_LIST SUPPORTED_SANDBOX_METHODS)
+        message(FATAL_ERROR "'${ENABLE_SANDBOX}' is not a supported "
+                            "sandboxing method")
+    endif()
+
+    # When autodetecting, the search order is fixed and we must not find
+    # more than one method.
+    if(ENABLE_SANDBOX STREQUAL "OFF")
+        set(SANDBOX_FOUND ON)
+    else()
+        set(SANDBOX_FOUND OFF)
+    endif()
+
+    # Sandboxing: Capsicum
+    if(NOT SANDBOX_FOUND AND ENABLE_SANDBOX MATCHES "^ON$|^capsicum$")
+        check_symbol_exists(cap_rights_limit sys/capsicum.h
+                            HAVE_CAP_RIGHTS_LIMIT)
+        if(HAVE_CAP_RIGHTS_LIMIT)
+            target_compile_definitions(xz PRIVATE HAVE_CAP_RIGHTS_LIMIT)
+            set(SANDBOX_FOUND ON)
+        endif()
+    endif()
+
+    # Sandboxing: pledge(2)
+    if(NOT SANDBOX_FOUND AND ENABLE_SANDBOX MATCHES "^ON$|^pledge$")
+        check_symbol_exists(pledge unistd.h HAVE_PLEDGE)
+        if(HAVE_PLEDGE)
+            target_compile_definitions(xz PRIVATE HAVE_PLEDGE)
+            set(SANDBOX_FOUND ON)
+        endif()
+    endif()
+
+    # Sandboxing: Landlock
+    if(NOT SANDBOX_FOUND AND ENABLE_SANDBOX MATCHES "^ON$|^landlock$")
+        check_include_file(linux/landlock.h HAVE_LINUX_LANDLOCK_H)
+
+        if(HAVE_LINUX_LANDLOCK_H)
+            target_compile_definitions(xz PRIVATE HAVE_LINUX_LANDLOCK_H)
+            set(SANDBOX_FOUND ON)
+
+            # Of our three sandbox methods, only Landlock is incompatible
+            # with -fsanitize. FreeBSD 13.2 with Capsicum was tested with
+            # -fsanitize=address,undefined and had no issues. OpenBSD (as
+            # of version 7.4) has minimal support for process instrumentation.
+            # OpenBSD does not distribute the additional libraries needed
+            # (libasan, libubsan, etc.) with GCC or Clang needed for runtime
+            # sanitization support and instead only support
+            # -fsanitize-minimal-runtime for minimal undefined behavior
+            # sanitization. This minimal support is compatible with our use
+            # of the Pledge sandbox. So only Landlock will result in a
+            # build that cannot compress or decompress a single file to
+            # standard out.
+            if(CMAKE_C_FLAGS MATCHES "-fsanitize=")
+                message(SEND_ERROR
+                        "CMAKE_C_FLAGS or the environment variable CFLAGS "
+                        "contains '-fsanitize=' which is incompatible "
+                        "with Landlock sandboxing. Use -DENABLE_SANDBOX=OFF "
+                        "as an argument to 'cmake' when using '-fsanitize'.")
+            endif()
+        endif()
+    endif()
+
+    if(NOT SANDBOX_FOUND AND NOT ENABLE_SANDBOX MATCHES "^ON$|^OFF$")
+        message(SEND_ERROR "ENABLE_SANDBOX=${ENABLE_SANDBOX} was used but "
+                           "support for the sandboxing method wasn't found.")
     endif()
 
     install(TARGETS xz
@@ -1249,7 +1417,7 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
         # even on Windows the symlink can still be executed without
         # the .exe extension.
         foreach(LINK IN LISTS XZ_LINKS)
-            add_custom_target("${LINK}" ALL
+            add_custom_target("create_${LINK}" ALL
                 "${CMAKE_COMMAND}" -E create_symlink
                     "$<TARGET_FILE_NAME:xz>" "${LINK}"
                 BYPRODUCTS "${LINK}"
@@ -1262,7 +1430,7 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
             # created broken. The symlinks will not be valid until install
             # so they cannot be created on these system environments.
             if(ALLOW_BROKEN_SYMLINKS)
-                add_custom_target("${LINK}.1" ALL
+                add_custom_target("create_${LINK}.1" ALL
                     "${CMAKE_COMMAND}" -E create_symlink "xz.1" "${LINK}.1"
                     BYPRODUCTS "${LINK}.1"
                     VERBATIM)
@@ -1274,7 +1442,7 @@ if(NOT MSVC AND HAVE_GETOPT_LONG)
                 # cannot be made. This ensures parallel builds do not fail
                 # since it will enforce the order of creating xz first, then
                 # the symlinks.
-                add_dependencies("${LINK}" xz)
+                add_dependencies("create_${LINK}" xz)
             endif()
         endforeach()
     endif()
@@ -1310,7 +1478,6 @@ if(BUILD_TESTING)
             src/common
             src/liblzma/api
             src/liblzma
-            lib
         )
 
         target_link_libraries("${TEST}" PRIVATE liblzma)

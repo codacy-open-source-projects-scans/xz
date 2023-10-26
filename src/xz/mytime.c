@@ -12,7 +12,10 @@
 
 #include "private.h"
 
-#ifdef HAVE_CLOCK_GETTIME
+#if defined(MYTHREAD_VISTA) || defined(_MSC_VER)
+	// Nothing
+#elif defined(HAVE_CLOCK_GETTIME) \
+		&& (!defined(__MINGW32__) || defined(MYTHREAD_POSIX))
 #	include <time.h>
 #else
 #	include <sys/time.h>
@@ -45,7 +48,26 @@ static uint64_t next_flush;
 static uint64_t
 mytime_now(void)
 {
-#ifdef HAVE_CLOCK_GETTIME
+#if defined(MYTHREAD_VISTA) || defined(_MSC_VER)
+	// Since there is no SIGALRM on Windows, this function gets
+	// called frequently when the progress indicator is in use.
+	// Progress indicator doesn't need high-resolution time.
+	// GetTickCount64() has very low overhead but needs at least WinVista.
+	//
+	// MinGW-w64 provides the POSIX functions clock_gettime() and
+	// gettimeofday() in a manner that allow xz to run on older
+	// than WinVista. If the threading method needs WinVista anyway,
+	// there's no reason to avoid a WinVista API here either.
+	return GetTickCount64();
+
+#elif defined(HAVE_CLOCK_GETTIME) \
+		&& (!defined(__MINGW32__) || defined(MYTHREAD_POSIX))
+	// MinGW-w64: clock_gettime() is defined in winpthreads but we need
+	// nothing else from winpthreads (unless, for some odd reason, POSIX
+	// threading has been selected). By avoiding clock_gettime(), we
+	// avoid the dependency on libwinpthread-1.dll or the need to link
+	// against the static version. The downside is that the fallback
+	// method, gettimeofday(), doesn't provide monotonic time.
 	struct timespec tv;
 
 #	ifdef HAVE_CLOCK_MONOTONIC
@@ -60,6 +82,7 @@ mytime_now(void)
 #	endif
 
 	return (uint64_t)tv.tv_sec * 1000 + (uint64_t)(tv.tv_nsec / 1000000);
+
 #else
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
