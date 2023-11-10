@@ -9,7 +9,6 @@
 #
 # On some platforms this builds also xz and xzdec, but these are
 # highly experimental and meant for testing only:
-#   - No large file support on those 32-bit platforms that need it
 #   - No translations
 #
 # Other missing things:
@@ -51,14 +50,19 @@ include(CheckIncludeFile)
 include(CheckSymbolExists)
 include(CheckStructHasMember)
 include(CheckCSourceCompiles)
+include(cmake/tuklib_large_file_support.cmake)
 include(cmake/tuklib_integer.cmake)
 include(cmake/tuklib_cpucores.cmake)
 include(cmake/tuklib_physmem.cmake)
 include(cmake/tuklib_progname.cmake)
 include(cmake/tuklib_mbstr.cmake)
 
-# Get the package version from version.h into XZ_VERSION variable.
-file(READ src/liblzma/api/lzma/version.h XZ_VERSION)
+set(PACKAGE_NAME "XZ Utils")
+set(PACKAGE_BUGREPORT "xz@tukaani.org")
+set(PACKAGE_URL "https://tukaani.org/xz/")
+
+# Get the package version from version.h into PACKAGE_VERSION variable.
+file(READ src/liblzma/api/lzma/version.h PACKAGE_VERSION)
 string(REGEX REPLACE
 "^.*\n\
 #define LZMA_VERSION_MAJOR ([0-9]+)\n\
@@ -67,10 +71,10 @@ string(REGEX REPLACE
 .*\
 #define LZMA_VERSION_PATCH ([0-9]+)\n\
 .*$"
-       "\\1.\\2.\\3" XZ_VERSION "${XZ_VERSION}")
+       "\\1.\\2.\\3" PACKAGE_VERSION "${PACKAGE_VERSION}")
 
 # Among other things, this gives us variables xz_VERSION and xz_VERSION_MAJOR.
-project(xz VERSION "${XZ_VERSION}" LANGUAGES C)
+project(xz VERSION "${PACKAGE_VERSION}" LANGUAGES C)
 
 # We need a compiler that supports enough C99 or newer (variable-length arrays
 # aren't needed, those are optional in C17). Setting CMAKE_C_STANDARD here
@@ -105,22 +109,23 @@ if((MINGW OR CYGWIN OR MSYS) AND (
         NOT CMAKE_C_COMPILER_ID STREQUAL "Clang" OR
         CMAKE_C_COMPILER_VERSION VERSION_GREATER_EQUAL "17"))
     # Use workarounds with GNU windres and llvm-windres >= 17.0.0. The \x20
-    # in PACKAGE_NAME works with gcc and clang too so we don't need to worry
-    # how to pass different flags to windres and the C compiler.
+    # in PACKAGE_NAME_DEFINITION works with gcc and clang too so we don't need
+    # to worry how to pass different flags to windres and the C compiler.
+    # Keep the original PACKAGE_NAME intact for generation of liblzma.pc.
     string(APPEND CMAKE_RC_FLAGS " --use-temp-file")
-    set(PACKAGE_NAME "XZ\\x20Utils")
+    string(REPLACE " " "\\x20" PACKAGE_NAME_DEFINITION "${PACKAGE_NAME}")
 else()
     # Elsewhere a space is safe. This also keeps things compatible with
     # EBCDIC in case CMake-based build is ever done on such a system.
-    set(PACKAGE_NAME "XZ Utils")
+    set(PACKAGE_NAME_DEFINITION "${PACKAGE_NAME}")
 endif()
 
 # Definitions common to all targets:
 add_compile_definitions(
     # Package info:
-    PACKAGE_NAME="${PACKAGE_NAME}"
-    PACKAGE_BUGREPORT="xz@tukaani.org"
-    PACKAGE_URL="https://tukaani.org/xz/"
+    PACKAGE_NAME="${PACKAGE_NAME_DEFINITION}"
+    PACKAGE_BUGREPORT="${PACKAGE_BUGREPORT}"
+    PACKAGE_URL="${PACKAGE_URL}"
 
     # Standard headers and types are available:
     HAVE_STDBOOL_H
@@ -145,8 +150,16 @@ add_compile_definitions(
 # it also adds the definitions to CMAKE_REQUIRED_DEFINITIONS.
 tuklib_use_system_extensions(ALL)
 
+# Check for large file support. It's required on some 32-bit platforms and
+# even on 64-bit MinGW-w64 to get 64-bit off_t. This can be forced off on
+# the CMake command line if needed: -DLARGE_FILE_SUPPORT=OFF
+tuklib_large_file_support(ALL)
+
 # This is needed by liblzma and xz.
 tuklib_integer(ALL)
+
+# This is used for liblzma.pc generation to add -lrt if needed.
+set(LIBS)
 
 # Check for clock_gettime(). Do this before checking for threading so
 # that we know there if CLOCK_MONOTONIC is available.
@@ -163,6 +176,7 @@ if(NOT HAVE_CLOCK_GETTIME)
     # CMAKE_REQUIRED_LIBRARIES for further tests too.
     if(HAVE_CLOCK_GETTIME_LIBRT)
         link_libraries(rt)
+        set(LIBS "-lrt") # For liblzma.pc
     else()
         list(REMOVE_AT CMAKE_REQUIRED_LIBRARIES 0)
     endif()
@@ -889,6 +903,26 @@ if(WIN32)
 
         # Export the public API symbols with __declspec(dllexport).
         target_compile_definitions(liblzma PRIVATE DLL_EXPORT)
+
+        if(NOT MSVC)
+            # Create a DEF file. The linker puts the ordinal numbers there
+            # too so the output from the linker isn't our final file.
+            target_link_options(liblzma PRIVATE
+                                "-Wl,--output-def,liblzma.def.in")
+
+            # Remove the ordinal numbers from the DEF file so that
+            # no one will create an import library that links by ordinal
+            # instead of by name. We don't maintain a DEF file so the
+            # ordinal numbers aren't stable.
+            add_custom_command(TARGET liblzma POST_BUILD
+                COMMAND "${CMAKE_COMMAND}"
+                    -DINPUT_FILE=liblzma.def.in
+                    -DOUTPUT_FILE=liblzma.def
+                    -P
+                    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/remove-ordinals.cmake"
+                BYPRODUCTS "liblzma.def"
+                VERBATIM)
+        endif()
     else()
         # Disable __declspec(dllimport) when linking against static liblzma.
         target_compile_definitions(liblzma INTERFACE LZMA_API_STATIC)
@@ -931,6 +965,7 @@ set_target_properties(liblzma PROPERTIES
     # It's liblzma.so or liblzma.dll, not libliblzma.so or lzma.dll.
     # Avoid the name lzma.dll because it would conflict with LZMA SDK.
     PREFIX ""
+    IMPORT_PREFIX ""
 )
 
 # Create liblzma-config-version.cmake.
@@ -979,6 +1014,16 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
 # Set CMAKE_INSTALL_LIBDIR and friends.
 include(GNUInstallDirs)
 
+# Create liblzma.pc.
+set(prefix "${CMAKE_INSTALL_PREFIX}")
+set(exec_prefix "${CMAKE_INSTALL_PREFIX}")
+set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
+set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+set(PTHREAD_CFLAGS "${CMAKE_THREAD_LIBS_INIT}")
+configure_file(src/liblzma/liblzma.pc.in liblzma.pc
+               @ONLY
+               NEWLINE_STYLE LF)
+
 # Install the library binary. The INCLUDES specifies the include path that
 # is exported for other projects to use but it doesn't install any files.
 install(TARGETS liblzma EXPORT liblzmaTargets
@@ -1013,6 +1058,12 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
               "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config-version.cmake"
         DESTINATION "${liblzma_INSTALL_CMAKEDIR}"
         COMPONENT liblzma_Development)
+
+if(NOT MSVC)
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma.pc"
+            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+            COMPONENT liblzma_Development)
+endif()
 
 
 #############################################################################
@@ -1497,7 +1548,7 @@ if(BUILD_TESTING)
         #
         # Set the return code for skipped tests to match Automake convention.
         set_tests_properties("${TEST}" PROPERTIES
-            ENVIRONMENT "srcdir=${CMAKE_CURRENT_LIST_DIR}/tests"
+            ENVIRONMENT "srcdir=${CMAKE_CURRENT_SOURCE_DIR}/tests"
             SKIP_RETURN_CODE 77
         )
     endforeach()
