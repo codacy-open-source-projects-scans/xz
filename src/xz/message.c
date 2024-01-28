@@ -1022,8 +1022,8 @@ message_help(bool long_help)
 "                      does not affect decompressor memory requirements"));
 
 	puts(_(
-"  -T, --threads=NUM   use at most NUM threads; the default is 1; set to 0\n"
-"                      to use as many threads as there are processor cores"));
+"  -T, --threads=NUM   use at most NUM threads; the default is 0 which uses\n"
+"                      as many threads as there are processor cores"));
 
 	if (long_help) {
 		puts(_(
@@ -1107,6 +1107,7 @@ message_help(bool long_help)
 "  --powerpc[=OPTS]    PowerPC BCJ filter (big endian only)\n"
 "  --ia64[=OPTS]       IA-64 (Itanium) BCJ filter\n"
 "  --sparc[=OPTS]      SPARC BCJ filter\n"
+"  --riscv[=OPTS]      RISC-V BCJ filter\n"
 "                      Valid OPTS for all BCJ filters:\n"
 "                        start=NUM  start offset for conversions (default=0)"));
 
