@@ -14,13 +14,13 @@
 #include "check.h"
 #include "crc_common.h"
 
-#ifdef CRC_X86_CLMUL
+#if defined(CRC_X86_CLMUL)
 #	define BUILDING_CRC64_CLMUL
 #	include "crc_x86_clmul.h"
 #endif
 
 
-#ifdef CRC_GENERIC
+#ifdef CRC64_GENERIC
 
 /////////////////////////////////
 // Generic slice-by-four CRC64 //
@@ -82,7 +82,7 @@ crc64_generic(const uint8_t *buf, size_t size, uint64_t crc)
 #endif
 
 
-#if defined(CRC_GENERIC) && defined(CRC_ARCH_OPTIMIZED)
+#if defined(CRC64_GENERIC) && defined(CRC64_ARCH_OPTIMIZED)
 
 //////////////////////////
 // Function dispatching //
@@ -94,7 +94,7 @@ crc64_generic(const uint8_t *buf, size_t size, uint64_t crc)
 typedef uint64_t (*crc64_func_type)(
 		const uint8_t *buf, size_t size, uint64_t crc);
 
-#if defined(HAVE_FUNC_ATTRIBUTE_IFUNC) && defined(__clang__)
+#if defined(CRC_USE_IFUNC) && defined(__clang__)
 #	pragma GCC diagnostic push
 #	pragma GCC diagnostic ignored "-Wunused-function"
 #endif
@@ -106,11 +106,11 @@ crc64_resolve(void)
 			? &crc64_arch_optimized : &crc64_generic;
 }
 
-#if defined(HAVE_FUNC_ATTRIBUTE_IFUNC) && defined(__clang__)
+#if defined(CRC_USE_IFUNC) && defined(__clang__)
 #	pragma GCC diagnostic pop
 #endif
 
-#ifndef HAVE_FUNC_ATTRIBUTE_IFUNC
+#ifndef CRC_USE_IFUNC
 
 #ifdef HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR
 #	define CRC64_SET_FUNC_ATTR __attribute__((__constructor__))
@@ -151,7 +151,7 @@ lzma_crc64(const uint8_t *buf, size_t size, uint64_t crc)
 extern LZMA_API(uint64_t)
 lzma_crc64(const uint8_t *buf, size_t size, uint64_t crc)
 {
-#if defined(CRC_GENERIC) && defined(CRC_ARCH_OPTIMIZED)
+#if defined(CRC64_GENERIC) && defined(CRC64_ARCH_OPTIMIZED)
 
 #ifdef CRC_USE_GENERIC_FOR_SMALL_INPUTS
 	if (size <= 16)
@@ -159,7 +159,7 @@ lzma_crc64(const uint8_t *buf, size_t size, uint64_t crc)
 #endif
 	return crc64_func(buf, size, crc);
 
-#elif defined(CRC_ARCH_OPTIMIZED)
+#elif defined(CRC64_ARCH_OPTIMIZED)
 	// If arch-optimized version is used unconditionally without runtime
 	// CPU detection then omitting the generic version and its 8 KiB
 	// lookup table makes the library smaller.
