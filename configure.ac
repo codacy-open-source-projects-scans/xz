@@ -1,12 +1,11 @@
 #                                               -*- Autoconf -*-
-# Process this file with autoconf to produce a configure script.
+# SPDX-License-Identifier: 0BSD
 
 ###############################################################################
 #
-# Author: Lasse Collin
+# Process this file with autoconf to produce a configure script.
 #
-# This file has been put into the public domain.
-# You can do whatever you want with this file.
+# Author: Lasse Collin
 #
 ###############################################################################
 

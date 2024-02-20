@@ -1,5 +1,6 @@
 #!/bin/bash
-#
+# SPDX-License-Identifier: 0BSD
+
 #############################################################################
 #
 # Script meant to be used for Continuous Integration automation for POSIX
@@ -8,9 +9,6 @@
 #############################################################################
 #
 # Author: Jia Tan
-#
-# This file has been put into the public domain.
-# You can do whatever you want with this file.
 #
 #############################################################################
 

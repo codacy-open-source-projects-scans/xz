@@ -1,30 +1,84 @@
+# SPDX-License-Identifier: 0BSD
+
 #############################################################################
 #
-# Very limited CMake support for building some parts of XZ Utils
+# CMake support for building XZ Utils
 #
-# For now, this is intended to be useful to build static or shared liblzma
-# on Windows with MSVC (to avoid the need to maintain Visual Studio project
-# files). Building liblzma on a few other platforms should work too but it
-# is somewhat experimental and not as portable as using ./configure.
+# The complete CMake-based build hasn't been tested much yet and
+# thus it's still slightly experimental. Testing this especially
+# outside GNU/Linux and Windows would be great now.
 #
-# On some platforms this builds also xz and xzdec, but these are
-# highly experimental and meant for testing only:
-#   - No translations
+# A few things are still missing compared to the Autotools-based build:
 #
-# Other missing things:
-#   - No xzgrep or other scripts or their symlinks
-#   - No xz tests (liblzma tests only)
+#   - A few tests aren't CMake compatible yet and thus aren't run!
 #
-# NOTE: Even if the code compiles without warnings, the end result may be
-# different than via ./configure. Specifically, the list of #defines
-# may be different (if so, probably this CMakeLists.txt got them wrong).
+#   - 32-bit x86 assembly code for CRC32 and CRC64 isn't used.
+#
+#   - External SHA-256 code isn't supported but it's disabled by
+#     default in the Autotools build too (--enable-external-sha256).
+#
+#   - Extra compiler warning flags aren't added by default.
+#
+# About CMAKE_BUILD_TYPE:
+#
+#   - CMake's standard choices are fine to use for production builds,
+#     including "Release" and "RelWithDebInfo".
+#
+#     NOTE: While "Release" uses -O3 by default with some compilers,
+#     this file overrides -O3 to -O2 for "Release" builds if
+#     CMAKE_C_FLAGS_RELEASE is not defined by the user. At least
+#     with GCC and Clang/LLVM, -O3 doesn't seem useful for this
+#     package as it can result in bigger binaries without any
+#     improvement in speed compared to -O2.
+#
+#   - Empty value (the default) is handled slightly specially: It
+#     adds -DNDEBUG to disable debugging code (assert() and a few
+#     other things). No optimization flags are added so an empty
+#     CMAKE_BUILD_TYPE is an easy way to build with whatever
+#     optimization flags one wants, and so this method is also
+#     suitable for production builds.
+#
+#     If debugging is wanted when using empty CMAKE_BUILD_TYPE,
+#     include -UNDEBUG in the CFLAGS environment variable or
+#     in the CMAKE_C_FLAGS CMake variable to override -DNDEBUG.
+#     With empty CMAKE_BUILD_TYPE, the -UNDEBUG option will go
+#     after the -DNDEBUG option on the compiler command line and
+#     thus NDEBUG will be undefined.
+#
+#   - Non-standard build types like "None" aren't treated specially
+#     and thus won't have -DNEBUG. Such non-standard build types
+#     SHOULD BE AVOIDED FOR PRODUCTION BUILDS. Or at least one
+#     should remember to add -DNDEBUG.
+#
+# If building from xz.git instead of a release tarball, consider
+# the following *before* running cmake:
+#
+#   - To get translated messages, install GNU gettext tools (the
+#     command msgfmt is needed). Alternatively disable translations
+#     by setting ENABLE_NLS=OFF.
+#
+#   - To get translated man pages, run po4a/update-po which requires
+#     the po4a tool. The build works without this step too.
+#
+#   - To get Doxygen-generated liblzma API docs in HTML format,
+#     run doxygen/update-doxygen which requires the doxygen tool.
+#     The build works without this step too.
 #
 # This file provides the following installation components (if you only
 # need liblzma, install only its components!):
-#   - liblzma_Runtime
+#   - liblzma_Runtime (shared library only)
 #   - liblzma_Development
-#   - xz (on some platforms only)
-#   - xzdec (on some platforms only)
+#   - liblzma_Documentation (examples and Doxygen-generated API docs as HTML)
+#   - xz_Runtime (xz, the symlinks, and possibly translation files)
+#   - xz_Documentation (xz man pages and the symlinks)
+#   - xzdec_Runtime
+#   - xzdec_Documentation (xzdec *and* lzmadec man pages)
+#   - lzmadec_Runtime
+#   - lzmainfo_Runtime
+#   - lzmainfo_Documentation (lzmainfo man pages)
+#   - scripts_Runtime (xzdiff, xzgrep, xzless, xzmore)
+#   - scripts_Documentation (their man pages)
+#   - Documentation (generic docs like README and licenses)
 #
 # To find the target liblzma::liblzma from other packages, use the CONFIG
 # option with find_package() to avoid a conflict with the FindLibLZMA module
@@ -38,12 +92,10 @@
 #
 # Author: Lasse Collin
 #
-# This file has been put into the public domain.
-# You can do whatever you want with this file.
-#
 #############################################################################
 
-cmake_minimum_required(VERSION 3.13...3.27 FATAL_ERROR)
+# NOTE: Translation support is disabled with CMake older than 3.20.
+cmake_minimum_required(VERSION 3.14...3.28 FATAL_ERROR)
 
 include(CMakePushCheckState)
 include(CheckIncludeFile)
@@ -73,8 +125,27 @@ string(REGEX REPLACE
 .*$"
        "\\1.\\2.\\3" PACKAGE_VERSION "${PACKAGE_VERSION}")
 
+# With several compilers, CMAKE_BUILD_TYPE=Release uses -O3 optimization
+# which results in bigger code without a clear difference in speed. If
+# no user-defined CMAKE_C_FLAGS_RELEASE is present, override -O3 to -O2
+# to make it possible to recommend CMAKE_BUILD_TYPE=Release.
+if(NOT DEFINED CMAKE_C_FLAGS_RELEASE)
+    set(OVERRIDE_O3_IN_C_FLAGS_RELEASE ON)
+endif()
+
 # Among other things, this gives us variables xz_VERSION and xz_VERSION_MAJOR.
 project(xz VERSION "${PACKAGE_VERSION}" LANGUAGES C)
+
+if(OVERRIDE_O3_IN_C_FLAGS_RELEASE)
+    # Looking at CMake's source, there aren't any _FLAGS_RELEASE_INIT
+    # entries where "-O3" would appear as part of some other option,
+    # thus a simple search and replace should be fine.
+    string(REPLACE -O3 -O2 CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}")
+
+    # Update the cache value while keeping its docstring unchanged.
+    set_property(CACHE CMAKE_C_FLAGS_RELEASE
+                 PROPERTY VALUE "${CMAKE_C_FLAGS_RELEASE}")
+endif()
 
 # We need a compiler that supports enough C99 or newer (variable-length arrays
 # aren't needed, those are optional in C17). Setting CMAKE_C_STANDARD here
@@ -188,6 +259,22 @@ if(HAVE_CLOCK_GETTIME OR HAVE_CLOCK_GETTIME_LIBRT)
     # Check if CLOCK_MONOTONIC is available for clock_gettime().
     check_symbol_exists(CLOCK_MONOTONIC time.h HAVE_CLOCK_MONOTONIC)
     tuklib_add_definition_if(ALL HAVE_CLOCK_MONOTONIC)
+endif()
+
+# Translation support requires CMake 3.20 because it added the Intl::Intl
+# target so we don't need to play with the individual variables.
+#
+# The defintion ENABLE_NLS is added only to those targets that use it, thus
+# it's not done here. (xz has translations, xzdec doesn't.)
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
+    find_package(Intl)
+    find_package(Gettext)
+    if(Intl_FOUND)
+        option(ENABLE_NLS "Native Language Support (translated messages)" ON)
+
+        # The *installed* name of the translation files is "xz.mo".
+        set(TRANSLATION_DOMAIN "xz")
+    endif()
 endif()
 
 # Options for new enough GCC or Clang on any arch or operating system:
@@ -758,7 +845,7 @@ endif()
 set(SUPPORTED_SANDBOX_METHODS ON OFF capsicum pledge landlock)
 
 set(ENABLE_SANDBOX ON CACHE STRING
-    "Sandboxing method to use in 'xz' and 'xzdec'")
+    "Sandboxing method to use in 'xz', 'xzdec', and 'lzmadec'")
 
 set_property(CACHE ENABLE_SANDBOX
                 PROPERTY STRINGS "${SUPPORTED_SANDBOX_METHODS}")
@@ -1057,10 +1144,28 @@ if(ALLOW_ARM64_CRC32)
 endif()
 
 
-# Support -fvisiblity=hidden when building shared liblzma.
-# These lines do nothing on Windows (even under Cygwin).
-# HAVE_VISIBILITY should always be defined to 0 or 1.
-if(BUILD_SHARED_LIBS)
+# Symbol visibility support:
+#
+# The C_VISIBILITY_PRESET property takes care of adding the compiler
+# option -fvisibility=hidden (or equivalent) if and only if it is supported.
+#
+# HAVE_VISIBILITY should always be defined to 0 or 1. It tells liblzma
+# if __attribute__((__visibility__("default")))
+# and __attribute__((__visibility__("hidden"))) are supported.
+# Those are useful only when the compiler supports -fvisibility=hidden
+# or such option so HAVE_VISIBILITY should be 1 only when both option and
+# the attribute support are present. HAVE_VISIBILITY is ignored on Windows
+# and Cygwin by the liblzma C code; __declspec(dllexport) is used instead.
+#
+# CMake's GenerateExportHeader module is too fancy since liblzma already
+# has the necessary macros. Instead, check CMake's internal variable
+# CMAKE_C_COMPILE_OPTIONS_VISIBILITY (it's the C-specific variant of
+# CMAKE_<LANG>_COMPILE_OPTIONS_VISIBILITY) which contains the compiler
+# command line option for visibility support. It's empty or unset when
+# visibility isn't supported. (It was added to CMake 2.8.12 in the commit
+# 0e9f4bc00c6b26f254e74063e4026ac33b786513 in 2013.) This way we don't
+# set HAVE_VISIBILITY to 1 when visibility isn't actually supported.
+if(BUILD_SHARED_LIBS AND CMAKE_C_COMPILE_OPTIONS_VISIBILITY)
     set_target_properties(liblzma PROPERTIES C_VISIBILITY_PRESET hidden)
     target_compile_definitions(liblzma PRIVATE HAVE_VISIBILITY=1)
 else()
@@ -1102,8 +1207,22 @@ if(WIN32)
         # Disable __declspec(dllimport) when linking against static liblzma.
         target_compile_definitions(liblzma INTERFACE LZMA_API_STATIC)
     endif()
-elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
+elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux" AND
+       NOT CMAKE_SYSTEM_PROCESSOR MATCHES "[Mm]icro[Bb]laze")
     # GNU/Linux-specific symbol versioning for shared liblzma.
+    # This includes a few extra compatibility symbols for RHEL/CentOS 7
+    # which are pointless on non-glibc non-Linux systems.
+    #
+    # As a special case, GNU/Linux on MicroBlaze gets the generic
+    # symbol versioning because GCC 12 doesn't support the __symver__
+    # attribute on MicroBlaze. On Linux, CMAKE_SYSTEM_PROCESSOR comes
+    # from "uname -m" for native builds (should be "microblaze") or from
+    # the CMake toolchain file (not perfectly standardized but it very
+    # likely has "microblaze" in lower case or mixed case somewhere in
+    # the string).
+    #
+    # FIXME? Avoid symvers on Linux with non-glibc like musl?
+    #
     # Note that adding link options doesn't affect static builds
     # but HAVE_SYMBOL_VERSIONS_LINUX must not be used with static builds
     # because it would put symbol versions into the static library which
@@ -1119,9 +1238,10 @@ elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     set_target_properties(liblzma PROPERTIES
         LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_linux.map"
     )
-elseif(BUILD_SHARED_LIBS AND CMAKE_SYSTEM_NAME STREQUAL "FreeBSD")
-    # Symbol versioning for shared liblzma for non-GNU/Linux.
-    # FIXME? What about Solaris?
+elseif(BUILD_SHARED_LIBS AND (CMAKE_SYSTEM_NAME STREQUAL "FreeBSD" OR
+                              CMAKE_SYSTEM_NAME STREQUAL "Linux"))
+    # Generic symbol versioning for shared liblzma is used on FreeBSD and
+    # also on GNU/Linux on MicroBlaze.
     target_link_options(liblzma PRIVATE
         "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_generic.map"
     )
@@ -1242,6 +1362,73 @@ endif()
 
 
 #############################################################################
+# Helper functions for installing files
+#############################################################################
+
+# For each non-empty element in the list LINK_NAMES, creates symbolic links
+# ${LINK_NAME}${LINK_SUFFIX} -> ${TARGET_NAME} in the directory ${DIR}.
+# The target file should exist because on Cygwin and MSYS2 symlink creation
+# can fail under certain conditions if the target doesn't exist.
+function(my_install_symlinks COMPONENT DIR TARGET_NAME LINK_SUFFIX LINK_NAMES)
+    install(CODE "set(D \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/${DIR}\")
+                 foreach(L ${LINK_NAMES})
+                     file(CREATE_LINK \"${TARGET_NAME}\"
+                                      \"\${D}/\${L}${LINK_SUFFIX}\"
+                                      SYMBOLIC)
+                 endforeach()"
+            COMPONENT "${COMPONENT}")
+endfunction()
+
+# Installs a man page file of a given language ("" for the untranslated file)
+# and optionally its alternative names as symlinks. This is a helper function
+# for my_install_man() below.
+function(my_install_man_lang COMPONENT SRC_FILE MAN_LANG LINK_NAMES)
+    # Get the man page section from the filename suffix.
+    string(REGEX REPLACE "^.*\.([^/.]+)$" "\\1" MAN_SECTION "${SRC_FILE}")
+
+    # A few man pages might be missing from translations.
+    # Don't attempt to install them or create the related symlinks.
+    if(NOT MAN_LANG STREQUAL "" AND NOT EXISTS "${SRC_FILE}")
+        return()
+    endif()
+
+    # Installing the file must be done before creating the symlinks
+    # due to Cygwin and MSYS2.
+    install(FILES "${SRC_FILE}"
+            DESTINATION "${CMAKE_INSTALL_MANDIR}/${MAN_LANG}/man${MAN_SECTION}"
+            COMPONENT "${COMPONENT}")
+
+    # Get the basename of the file to be used as the symlink target.
+    get_filename_component(BASENAME "${SRC_FILE}" NAME)
+
+    # LINK_NAMES don't contain the man page filename suffix (like ".1")
+    # so it needs to be told to my_install_symlinks.
+    my_install_symlinks("${COMPONENT}"
+                        "${CMAKE_INSTALL_MANDIR}/${MAN_LANG}/man${MAN_SECTION}"
+                        "${BASENAME}" ".${MAN_SECTION}" "${LINK_NAMES}")
+endfunction()
+
+# Installs a man page file and optionally its alternative names as symlinks.
+# Does the same for translations if ENABLE_NLS.
+function(my_install_man COMPONENT SRC_FILE LINK_NAMES)
+    my_install_man_lang("${COMPONENT}" "${SRC_FILE}" "" "${LINK_NAMES}")
+
+    if(ENABLE_NLS)
+        # Find the translated versions of this man page.
+        get_filename_component(BASENAME "${SRC_FILE}" NAME)
+        file(GLOB MAN_FILES "po4a/man/*/${BASENAME}")
+
+        foreach(F ${MAN_FILES})
+            get_filename_component(MAN_LANG "${F}" DIRECTORY)
+            get_filename_component(MAN_LANG "${MAN_LANG}" NAME)
+            my_install_man_lang("${COMPONENT}" "${F}" "${MAN_LANG}"
+                                "${LINK_NAMES}")
+        endforeach()
+    endif()
+endfunction()
+
+
+#############################################################################
 # libgnu (getopt_long)
 #############################################################################
 
@@ -1252,7 +1439,12 @@ add_library(libgnu OBJECT)
 
 # CMake requires that even an object library must have at least once source
 # file. So we give it a header file that results in no output files.
-target_sources(libgnu PRIVATE lib/getopt.in.h)
+#
+# NOTE: Using a file outside the lib directory makes it possible to
+# delete lib/*.h and lib/*.c and still keep the build working if
+# getopt_long replacement isn't needed. It's convenient if one wishes
+# to be certain that no GNU LGPL code gets included in the binaries.
+target_sources(libgnu PRIVATE src/common/sysdefs.h)
 
 # The Ninja Generator requires setting the linker language since it cannot
 # guess the programming language of just a header file. Setting this
@@ -1306,11 +1498,68 @@ endif()
 
 
 #############################################################################
-# xzdec
+# xzdec and lzmadec
 #############################################################################
 
 if(HAVE_DECODERS AND (NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900))
-    add_executable(xzdec
+    foreach(XZDEC xzdec lzmadec)
+        add_executable("${XZDEC}"
+            src/common/sysdefs.h
+            src/common/tuklib_common.h
+            src/common/tuklib_config.h
+            src/common/tuklib_exit.c
+            src/common/tuklib_exit.h
+            src/common/tuklib_gettext.h
+            src/common/tuklib_progname.c
+            src/common/tuklib_progname.h
+            src/xzdec/xzdec.c
+        )
+
+        target_include_directories("${XZDEC}" PRIVATE
+            src/common
+            src/liblzma/api
+        )
+
+        target_link_libraries("${XZDEC}" PRIVATE liblzma libgnu)
+
+        if(WIN32)
+            # Add the Windows resource file for xzdec.exe or lzmadec.exe.
+            target_sources("${XZDEC}" PRIVATE src/xzdec/xzdec_w32res.rc)
+            set_target_properties("${XZDEC}" PROPERTIES
+                LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/common/common_w32res.rc"
+            )
+        endif()
+
+        if(SANDBOX_COMPILE_DEFINITION)
+            target_compile_definitions("${XZDEC}" PRIVATE
+                                    "${SANDBOX_COMPILE_DEFINITION}")
+        endif()
+
+        tuklib_progname("${XZDEC}")
+
+        install(TARGETS "${XZDEC}"
+                RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                        COMPONENT "${XZDEC}_Runtime")
+    endforeach()
+
+    # This is the only build-time difference with lzmadec.
+    target_compile_definitions(lzmadec PRIVATE "LZMADEC")
+
+    if(UNIX)
+        # NOTE: This puts the lzmadec.1 symlinks into xzdec_Documentation.
+        # This isn't great but doing them separately with translated
+        # man pages would require extra code. So this has to suffice for now.
+        my_install_man(xzdec_Documentation src/xzdec/xzdec.1 lzmadec)
+    endif()
+endif()
+
+
+#############################################################################
+# lzmainfo
+#############################################################################
+
+if(HAVE_DECODERS AND (NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900))
+    add_executable(lzmainfo
         src/common/sysdefs.h
         src/common/tuklib_common.h
         src/common/tuklib_config.h
@@ -1319,39 +1568,44 @@ if(HAVE_DECODERS AND (NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900))
         src/common/tuklib_gettext.h
         src/common/tuklib_progname.c
         src/common/tuklib_progname.h
-        src/xzdec/xzdec.c
+        src/lzmainfo/lzmainfo.c
     )
 
-    target_include_directories(xzdec PRIVATE
+    target_include_directories(lzmainfo PRIVATE
         src/common
         src/liblzma/api
     )
 
-    target_link_libraries(xzdec PRIVATE liblzma libgnu)
+    target_link_libraries(lzmainfo PRIVATE liblzma libgnu)
 
     if(WIN32)
-        # Add the Windows resource file for xzdec.exe.
-        target_sources(xzdec PRIVATE src/xzdec/xzdec_w32res.rc)
-        set_target_properties(xzdec PROPERTIES
+        # Add the Windows resource file for lzmainfo.exe.
+        target_sources(lzmainfo PRIVATE src/lzmainfo/lzmainfo_w32res.rc)
+        set_target_properties(lzmainfo PROPERTIES
             LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/common/common_w32res.rc"
         )
     endif()
 
-    if(SANDBOX_COMPILE_DEFINITION)
-        target_compile_definitions(xzdec PRIVATE
-                                   "${SANDBOX_COMPILE_DEFINITION}")
+    tuklib_progname(lzmainfo)
+
+    # NOTE: The translations are in the "xz" domain and the .mo files are
+    # installed as part of the "xz" target.
+    if(ENABLE_NLS)
+        target_link_libraries(lzmainfo PRIVATE Intl::Intl)
+
+        target_compile_definitions(lzmainfo PRIVATE
+                ENABLE_NLS
+                PACKAGE="${TRANSLATION_DOMAIN}"
+                LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}"
+        )
     endif()
 
-    tuklib_progname(xzdec)
-
-    install(TARGETS xzdec
+    install(TARGETS lzmainfo
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-                    COMPONENT xzdec)
+                    COMPONENT lzmainfo_Runtime)
 
     if(UNIX)
-        install(FILES src/xzdec/xzdec.1
-                DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
-                COMPONENT xzdec)
+        my_install_man(lzmainfo_Documentation src/lzmainfo/lzmainfo.1 "")
     endif()
 endif()
 
@@ -1394,6 +1648,8 @@ if(NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900)
         src/xz/options.c
         src/xz/options.h
         src/xz/private.h
+        src/xz/sandbox.c
+        src/xz/sandbox.h
         src/xz/signals.c
         src/xz/signals.h
         src/xz/suffix.c
@@ -1488,15 +1744,76 @@ if(NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900)
         endif()
     endif()
 
+    if(ENABLE_NLS)
+        target_link_libraries(xz PRIVATE Intl::Intl)
+
+        target_compile_definitions(xz PRIVATE
+                ENABLE_NLS
+                PACKAGE="${TRANSLATION_DOMAIN}"
+                LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}"
+        )
+
+        file(STRINGS po/LINGUAS LINGUAS)
+
+        # Where to find .gmo files. If msgfmt is available, the .po files
+        # will be converted as part of the build. Otherwise we will use
+        # the pre-generated .gmo files which are included in XZ Utils
+        # tarballs by Autotools.
+        set(GMO_DIR "${CMAKE_CURRENT_SOURCE_DIR}/po")
+
+        if(GETTEXT_FOUND)
+            # NOTE: gettext_process_po_files' INSTALL_DESTINATION is
+            # incompatible with how Autotools requires the .po files to
+            # be named. CMake would require each .po file to be named with
+            # the translation domain and thus each .po file would need its
+            # own language-specific directory (like "po/fi/xz.po"). On top
+            # of this, INSTALL_DESTINATION doesn't allow specifying COMPONENT
+            # and thus the .mo files go into "Unspecified" component. So we
+            # can use gettext_process_po_files to convert the .po files but
+            # installation needs to be done with our own code.
+            #
+            # Also, the .gmo files will go to root of the build directory
+            # instead of neatly into a subdirectory. This is hardcoded in
+            # CMake's FindGettext.cmake.
+            foreach(LANG IN LISTS LINGUAS)
+                gettext_process_po_files("${LANG}" ALL
+                        PO_FILES "${CMAKE_CURRENT_SOURCE_DIR}/po/${LANG}.po")
+            endforeach()
+
+            set(GMO_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+        endif()
+
+        foreach(LANG IN LISTS LINGUAS)
+            install(
+                FILES "${GMO_DIR}/${LANG}.gmo"
+                DESTINATION "${CMAKE_INSTALL_LOCALEDIR}/${LANG}/LC_MESSAGES"
+                RENAME "${TRANSLATION_DOMAIN}.mo"
+                COMPONENT xz_Runtime)
+        endforeach()
+    endif()
+
+    # This command must be before the symlink creation to keep things working
+    # on Cygwin and MSYS2 in all cases.
+    #
+    #   - Cygwin can encode symlinks in multiple ways. This can be
+    #     controlled via the environment variable "CYGWIN". If it contains
+    #     "winsymlinks:nativestrict" then symlink creation will fail if
+    #     the link target doesn't exist. This mode isn't the default though.
+    #     See: https://cygwin.com/faq.html#faq.api.symlinks
+    #
+    #   - MSYS2 supports the same winsymlinks option in the environment
+    #     variable "MSYS" (not "MSYS2). The default in MSYS2 is to make
+    #     a copy of the file instead of any kind of symlink. Thus the link
+    #     target must exist or the creation of the "symlink" (copy) will fail.
+    #
+    # Our installation order must be such that when a symbolic link is created
+    # its target must already exists. There is no race condition for parallel
+    # builds because the generated cmake_install.cmake executes serially.
     install(TARGETS xz
             RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}"
-                    COMPONENT xz)
+                    COMPONENT xz_Runtime)
 
     if(UNIX)
-        install(FILES src/xz/xz.1
-                DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
-                COMPONENT xz)
-
         option(CREATE_XZ_SYMLINKS "Create unxz and xzcat symlinks" ON)
         option(CREATE_LZMA_SYMLINKS "Create lzma, unlzma, and lzcat symlinks"
                ON)
@@ -1510,98 +1827,133 @@ if(NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900)
             list(APPEND XZ_LINKS "lzma" "unlzma" "lzcat")
         endif()
 
-        # With Windows Cygwin and MSYS2 the symlinking is complicated. Both
-        # of these environments set the UNIX variable so they will try to
-        # make the symlinks. The ability for Cygwin and MSYS2 to make
-        # broken symlinks is determined by the CYGWIN and MSYS2 environment
-        # variables, respectively. Broken symlinks are needed for the man
-        # page symlinks and for determining if the xz and lzma symlinks need
-        # to depend on the xz target or not. If broken symlinks cannot be
-        # made then the xz binary must be created before the symlinks.
-        set(ALLOW_BROKEN_SYMLINKS ON)
-
-        if(CMAKE_SYSTEM_NAME STREQUAL "CYGWIN")
-            # The Cygwin env variable can be set to four possible values:
-            #
-            # 1. "lnk". Create symlinks as Windows shortcuts.
-            #
-            # 2. "native". Create symlinks as native Windows symlinks
-            #    if supported by the system. Fallback to "lnk" if native
-            #    symlinks are not supported.
-            #
-            # 3. "nativestrict". Create symlinks as native Windows symlinks
-            #    if supported by the system. If the target of the symlink
-            #    does not exist or the creation of the symlink fails for any
-            #    reason, do not create the symlink.
-            #
-            # 4. "sys". Create symlinks as plain files with a special
-            #    system attribute containing the path to the symlink target.
-            #
-            # So, the only case we care about for broken symlinks is
-            # "nativestrict" since all other values mean that broken
-            # symlinks are allowed. If the env variable is not set the
-            # default is "native". If the env variable is set but not
-            # assigned one of the four values, then the default is the same
-            # as option 1 "lnk".
-            string(FIND "$ENV{CYGWIN}" "winsymlinks:nativestrict" SYMLINK_POS)
-            if(SYMLINK_POS GREATER -1)
-                set(ALLOW_BROKEN_SYMLINKS OFF)
-            endif()
-        elseif(CMAKE_SYSTEM_NAME STREQUAL "MSYS")
-            # The MSYS env variable behaves similar to the CYGWIN but has a
-            # different default behavior. If winsymlinks is set but not
-            # assigned one of the four supported values, the default is to
-            # *copy* the target to the symlink destination. This will fail
-            # if the target does not exist so broken symlinks cannot be
-            # allowed.
-            string(FIND "$ENV{MSYS}" "winsymlinks" SYMLINK_POS)
-            if(SYMLINK_POS GREATER -1)
-                string(FIND "$ENV{MSYS}" "winsymlinks:nativestrict"
-                        SYMLINK_POS)
-                if(SYMLINK_POS GREATER -1)
-                    set(ALLOW_BROKEN_SYMLINKS OFF)
-                endif()
-            else()
-                set(ALLOW_BROKEN_SYMLINKS OFF)
-            endif()
-        endif()
-
-        # Create symlinks in the build directory and then install them.
+        # On Cygwin, don't add the .exe suffix to the symlinks.
         #
-        # The symlinks do not likely need any special extension since
-        # even on Windows the symlink can still be executed without
-        # the .exe extension.
-        foreach(LINK IN LISTS XZ_LINKS)
-            add_custom_target("create_${LINK}" ALL
-                "${CMAKE_COMMAND}" -E create_symlink
-                    "$<TARGET_FILE_NAME:xz>" "${LINK}"
-                BYPRODUCTS "${LINK}"
-                VERBATIM)
-            install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${LINK}"
-                    DESTINATION "${CMAKE_INSTALL_BINDIR}"
-                    COMPONENT xz)
+        # FIXME? Does this make sense on MSYS & MSYS2 where "ln -s"
+        # by default makes copies? Inside MSYS & MSYS2 it is possible
+        # to execute files without the .exe suffix but not outside
+        # (like in Command Prompt). Omitting the suffix matches
+        # what configure.ac has done for many years though.
+        my_install_symlinks(xz_Runtime "${CMAKE_INSTALL_BINDIR}"
+                            "xz${CMAKE_EXECUTABLE_SUFFIX}" "" "${XZ_LINKS}")
 
-            # Only create the man page symlinks if the symlinks can be
-            # created broken. The symlinks will not be valid until install
-            # so they cannot be created on these system environments.
-            if(ALLOW_BROKEN_SYMLINKS)
-                add_custom_target("create_${LINK}.1" ALL
-                    "${CMAKE_COMMAND}" -E create_symlink "xz.1" "${LINK}.1"
-                    BYPRODUCTS "${LINK}.1"
-                    VERBATIM)
-                install(FILES "${CMAKE_CURRENT_BINARY_DIR}/${LINK}.1"
-                        DESTINATION "${CMAKE_INSTALL_MANDIR}/man1"
-                        COMPONENT xz)
-            else()
-                # Add the xz target as dependency when broken symlinks
-                # cannot be made. This ensures parallel builds do not fail
-                # since it will enforce the order of creating xz first, then
-                # the symlinks.
-                add_dependencies("create_${LINK}" xz)
-            endif()
-        endforeach()
+        # Install the man pages and (optionally) their symlinks
+        # and translations.
+        my_install_man(xz_Documentation src/xz/xz.1 "${XZ_LINKS}")
     endif()
 endif()
+
+
+#############################################################################
+# Scripts
+#############################################################################
+
+if(UNIX)
+    # NOTE: This isn't as sophisticated as in the Autotools build which
+    # uses posix-shell.m4 but hopefully this doesn't need to be either.
+    # CMake likely won't be used on as many (old) obscure systems as the
+    # Autotools-based builds are.
+    if(CMAKE_SYSTEM_NAME STREQUAL "SunOS" AND EXISTS "/usr/xpg4/bin/sh")
+        set(POSIX_SHELL_DEFAULT "/usr/xpg4/bin/sh")
+    else()
+        set(POSIX_SHELL_DEFAULT "/bin/sh")
+    endif()
+
+    set(POSIX_SHELL "${POSIX_SHELL_DEFAULT}" CACHE STRING
+        "Shell to use for scripts (xzgrep and others)")
+
+    # Guess the extra path to add from POSIX_SHELL. Autotools-based build
+    # has a separate option --enable-path-for-scripts=PREFIX but this is
+    # enough for Solaris.
+    set(enable_path_for_scripts)
+    get_filename_component(POSIX_SHELL_DIR "${POSIX_SHELL}" DIRECTORY)
+
+    if(NOT POSIX_SHELL_DIR STREQUAL "/bin" AND
+            NOT POSIX_SHELL_DIR STREQUAL "/usr/bin")
+        set(enable_path_for_scripts "PATH=${POSIX_SHELL_DIR}:\$PATH")
+    endif()
+
+    set(XZDIFF_LINKS xzcmp)
+    set(XZGREP_LINKS xzegrep xzfgrep)
+    set(XZMORE_LINKS)
+    set(XZLESS_LINKS)
+
+    if(CREATE_LZMA_SYMLINKS)
+        list(APPEND XZDIFF_LINKS lzdiff lzcmp)
+        list(APPEND XZGREP_LINKS lzgrep lzegrep lzfgrep)
+        list(APPEND XZMORE_LINKS lzmore)
+        list(APPEND XZLESS_LINKS lzless)
+    endif()
+
+    set(xz "xz")
+
+    foreach(S xzdiff xzgrep xzmore xzless)
+        configure_file("src/scripts/${S}.in" "${S}"
+               @ONLY
+               NEWLINE_STYLE LF)
+
+        install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${S}"
+                DESTINATION "${CMAKE_INSTALL_BINDIR}"
+                COMPONENT scripts_Runtime)
+    endforeach()
+
+    # file(CHMOD ...) would need CMake 3.19 so use execute_process instead.
+    # Using +x is fine even if umask was 077. If execute bit is set at all
+    # then "make install" will set it for group and other access bits too.
+    execute_process(COMMAND chmod +x xzdiff xzgrep xzmore xzless
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+
+    unset(xz)
+    unset(POSIX_SHELL)
+    unset(enable_path_for_scripts)
+
+    my_install_symlinks(scripts_Runtime "${CMAKE_INSTALL_BINDIR}" xzdiff ""
+                        "${XZDIFF_LINKS}")
+
+    my_install_symlinks(scripts_Runtime "${CMAKE_INSTALL_BINDIR}" xzgrep ""
+                        "${XZGREP_LINKS}")
+
+    my_install_symlinks(scripts_Runtime "${CMAKE_INSTALL_BINDIR}" xzmore ""
+                        "${XZMORE_LINKS}")
+
+    my_install_symlinks(scripts_Runtime "${CMAKE_INSTALL_BINDIR}" xzless ""
+                        "${XZLESS_LINKS}")
+
+    my_install_man(scripts_Documentation src/scripts/xzdiff.1 "${XZDIFF_LINKS}")
+    my_install_man(scripts_Documentation src/scripts/xzgrep.1 "${XZGREP_LINKS}")
+    my_install_man(scripts_Documentation src/scripts/xzmore.1 "${XZMORE_LINKS}")
+    my_install_man(scripts_Documentation src/scripts/xzless.1 "${XZLESS_LINKS}")
+endif()
+
+
+#############################################################################
+# Documentation
+#############################################################################
+
+# Use OPTIONAL because doc/api might not exist. The liblzma API docs
+# can be generated by running "doxygen/update-doxygen".
+install(DIRECTORY doc/api doc/examples
+        DESTINATION "${CMAKE_INSTALL_DOCDIR}"
+        COMPONENT liblzma_Documentation
+        OPTIONAL)
+
+# GPLv2 applies to the scripts. If GNU getopt_long is used then
+# LGPLv2.1 applies to the command line tools but, using the
+# section 3 of LGPLv2.1, GNU getopt_long can be handled as GPLv2 too.
+# Thus GPLv2 should be enough here.
+install(FILES AUTHORS
+              COPYING
+              COPYING.0BSD
+              COPYING.GPLv2
+              NEWS
+              README
+              THANKS
+              doc/faq.txt
+              doc/history.txt
+              doc/lzma-file-format.txt
+              doc/xz-file-format.txt
+        DESTINATION "${CMAKE_INSTALL_DOCDIR}"
+        COMPONENT Documentation)
 
 
 #############################################################################
@@ -1656,4 +2008,18 @@ if(BUILD_TESTING)
             SKIP_RETURN_CODE 77
         )
     endforeach()
+
+    if(UNIX AND HAVE_DECODERS)
+        file(MAKE_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_scripts")
+
+        add_test(NAME test_scripts.sh
+            COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_scripts.sh" ".."
+            WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/test_scripts"
+        )
+
+        set_tests_properties(test_scripts.sh PROPERTIES
+            ENVIRONMENT "srcdir=${CMAKE_CURRENT_SOURCE_DIR}/tests"
+            SKIP_RETURN_CODE 77
+        )
+    endif()
 endif()

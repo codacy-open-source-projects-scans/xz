@@ -1,9 +1,6 @@
-##
+## SPDX-License-Identifier: 0BSD
 ## Author: Lasse Collin
-##
-## This file has been put into the public domain.
-## You can do whatever you want with this file.
-##
+
 ## Note: There is no check for COND_CHECK_CRC32 because
 ## currently crc32 is always enabled.
 

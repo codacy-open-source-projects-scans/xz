@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: 0BSD
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 /// \file       crc_common.h
@@ -7,9 +9,6 @@
 //              Ilya Kurdyukov
 //              Hans Jansen
 //              Jia Tan
-//
-//  This file has been put into the public domain.
-//  You can do whatever you want with this file.
 //
 ///////////////////////////////////////////////////////////////////////////////
 

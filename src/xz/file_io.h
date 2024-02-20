@@ -1,12 +1,11 @@
+// SPDX-License-Identifier: 0BSD
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 /// \file       file_io.h
 /// \brief      I/O types and functions
 //
 //  Author:     Lasse Collin
-//
-//  This file has been put into the public domain.
-//  You can do whatever you want with this file.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -98,12 +97,6 @@ extern void io_write_to_user_abort_pipe(void);
 
 /// \brief      Disable creation of sparse files when decompressing
 extern void io_no_sparse(void);
-
-
-#ifdef ENABLE_SANDBOX
-/// \brief      main() calls this if conditions for sandboxing have been met.
-extern void io_allow_sandbox(void);
-#endif
 
 
 /// \brief      Open the source file

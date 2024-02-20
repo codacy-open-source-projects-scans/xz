@@ -1,5 +1,6 @@
 #!/bin/bash
-#
+# SPDX-License-Identifier: 0BSD
+
 ###############################################################################
 #
 # Build a binary package on Windows with MinGW and MSYS
@@ -20,9 +21,6 @@
 ###############################################################################
 #
 # Author: Lasse Collin
-#
-# This file has been put into the public domain.
-# You can do whatever you want with this file.
 #
 ###############################################################################
 

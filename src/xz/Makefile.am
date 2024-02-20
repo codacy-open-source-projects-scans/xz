@@ -1,9 +1,5 @@
-##
+## SPDX-License-Identifier: 0BSD
 ## Author: Lasse Collin
-##
-## This file has been put into the public domain.
-## You can do whatever you want with this file.
-##
 
 bin_PROGRAMS = xz
 
@@ -25,6 +21,8 @@ xz_SOURCES = \
 	options.c \
 	options.h \
 	private.h \
+	sandbox.c \
+	sandbox.h \
 	signals.c \
 	signals.h \
 	suffix.c \

@@ -1,12 +1,11 @@
+// SPDX-License-Identifier: 0BSD
+
 ///////////////////////////////////////////////////////////////////////////////
 //
 /// \file       private.h
 /// \brief      Common includes, definitions, and prototypes
 //
 //  Author:     Lasse Collin
-//
-//  This file has been put into the public domain.
-//  You can do whatever you want with this file.
 //
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -52,11 +51,6 @@
 #	define STDERR_FILENO (fileno(stderr))
 #endif
 
-#if defined(HAVE_CAP_RIGHTS_LIMIT) || defined(HAVE_PLEDGE) \
-		|| defined(HAVE_LINUX_LANDLOCK_H)
-#	define ENABLE_SANDBOX 1
-#endif
-
 // Handling SIGTSTP keeps time-keeping for progress indicator correct
 // if xz is stopped. It requires use of clock_gettime() as that is
 // async-signal safe in POSIX. Require also SIGALRM support since
@@ -76,6 +70,7 @@
 #include "hardware.h"
 #include "file_io.h"
 #include "options.h"
+#include "sandbox.h"
 #include "signals.h"
 #include "suffix.h"
 #include "util.h"

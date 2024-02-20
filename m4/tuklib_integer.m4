@@ -1,3 +1,6 @@
+# SPDX-License-Identifier: 0BSD
+
+#############################################################################
 #
 # SYNOPSIS
 #
@@ -11,13 +14,11 @@
 #     - Does the hardware support fast unaligned access to 16-bit, 32-bit,
 #       and 64-bit integers
 #
-# COPYING
+#############################################################################
 #
-#   Author: Lasse Collin
+# Author: Lasse Collin
 #
-#   This file has been put into the public domain.
-#   You can do whatever you want with this file.
-#
+#############################################################################
 
 AC_DEFUN_ONCE([TUKLIB_INTEGER], [
 AC_REQUIRE([TUKLIB_COMMON])
