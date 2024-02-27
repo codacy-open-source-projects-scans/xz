@@ -304,8 +304,13 @@ AC_ARG_ENABLE([microlzma], AS_HELP_STRING([--disable-microlzma],
 		for example, erofs-utils.]),
 	[], [enable_microlzma=yes])
 case $enable_microlzma in
-	yes | no)
-		AC_MSG_RESULT([$enable_microlzma])
+	yes)
+		AC_DEFINE([HAVE_MICROLZMA], [1],
+			[Define to 1 if MicroLZMA support is enabled.])
+		AC_MSG_RESULT([yes])
+		;;
+	no)
+		AC_MSG_RESULT([no])
 		;;
 	*)
 		AC_MSG_RESULT([])
@@ -1104,6 +1109,14 @@ AC_MSG_CHECKING([if ARM64 CRC32 instruction is usable])
 AS_IF([test "x$enable_arm64_crc32" = xno], [
 	AC_MSG_RESULT([no, --disable-arm64-crc32 was used])
 ], [
+	# Set -Werror here because some versions of Clang (14 and older)
+	# do not report the unsupported __attribute__((__target__("+crc")))
+	# or __crc32d() as an error, only as a warning. This does not need
+	# to be done with CMake because tests will attempt to link and the
+	# error will be reported then.
+	OLD_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -Werror"
+
 	AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
 #include <arm_acle.h>
 #include <stdint.h>
@@ -1124,6 +1137,8 @@ uint32_t my_crc(uint32_t a, uint64_t b)
 		enable_arm64_crc32=no
 	])
 	AC_MSG_RESULT([$enable_arm64_crc32])
+
+	CFLAGS="$OLD_CFLAGS"
 ])
 
 # Check for ARM64 CRC32 instruction runtime detection.
@@ -1162,12 +1177,37 @@ AS_CASE([$enable_sandbox],
 )
 AS_CASE([$enable_sandbox],
 	[auto | landlock], [
-		AC_CHECK_HEADERS([linux/landlock.h], [
+		AC_MSG_CHECKING([if Linux Landlock is usable])
+
+		# A compile check is done here because some systems have
+		# linux/landlock.h, but do not have the syscalls defined
+		# in order to actually use Linux Landlock.
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+			#include <linux/landlock.h>
+			#include <sys/syscall.h>
+			#include <sys/prctl.h>
+
+			void my_sandbox(void)
+			{
+				(void)prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+				(void)SYS_landlock_create_ruleset;
+				(void)SYS_landlock_restrict_self;
+				(void)LANDLOCK_CREATE_RULESET_VERSION;
+				return;
+			}
+		]])], [
 			enable_sandbox=found
 
 			AS_CASE([$CFLAGS], [*-fsanitize=*], [AC_MSG_ERROR([
     CFLAGS contains '-fsanitize=' which is incompatible with the Landlock
     sandboxing. Use --disable-sandbox when using '-fsanitize'.])])
+
+			AC_DEFINE([HAVE_LINUX_LANDLOCK], [1],
+				[Define to 1 if Linux Landlock is supported.
+				See configure.ac for details.])
+			AC_MSG_RESULT([yes])
+		], [
+			AC_MSG_RESULT([no])
 		])
 	]
 )

@@ -109,7 +109,7 @@ sandbox_enable_strict_if_allowed(int src_fd lzma_attribute((__unused__)),
 }
 
 
-#elif defined(HAVE_LINUX_LANDLOCK_H)
+#elif defined(HAVE_LINUX_LANDLOCK)
 
 //////////////
 // Landlock //
@@ -224,9 +224,17 @@ sandbox_init(void)
 	// These are all in ABI version 1 already. We don't need truncate
 	// rights because files are created with open() using O_EXCL and
 	// without O_TRUNC.
+	//
+	// LANDLOCK_ACCESS_FS_READ_DIR is included here to get a clear error
+	// message if xz is given a directory name. Without this permission
+	// the message would be "Permission denied" but with this permission
+	// it's "Is a directory, skipping". It could be worked around with
+	// stat()/lstat() but just giving this permission is simpler and
+	// shouldn't make the sandbox much weaker in practice.
 	const uint64_t required_rights
 			= LANDLOCK_ACCESS_FS_WRITE_FILE
 			| LANDLOCK_ACCESS_FS_READ_FILE
+			| LANDLOCK_ACCESS_FS_READ_DIR
 			| LANDLOCK_ACCESS_FS_REMOVE_FILE
 			| LANDLOCK_ACCESS_FS_MAKE_REG;
 
@@ -240,7 +248,9 @@ sandbox_enable_read_only(void)
 {
 	// We will be opening files for reading but
 	// won't create or remove any files.
-	const uint64_t required_rights = LANDLOCK_ACCESS_FS_READ_FILE;
+	const uint64_t required_rights
+			= LANDLOCK_ACCESS_FS_READ_FILE
+			| LANDLOCK_ACCESS_FS_READ_DIR;
 	enable_landlock(required_rights);
 	return;
 }
@@ -256,6 +266,9 @@ sandbox_enable_strict_if_allowed(int src_fd lzma_attribute((__unused__)),
 
 	// Allow all restrictions that the kernel supports with the
 	// highest Landlock ABI version that the kernel or xz supports.
+	//
+	// NOTE: LANDLOCK_ACCESS_FS_READ_DIR isn't needed here because
+	// the only input file has already been opened.
 	enable_landlock(0);
 	return;
 }
@@ -317,11 +330,11 @@ sandbox_enable_strict_if_allowed(
 			CAP_WRITE)))
 		goto error;
 
-	if (cap_rights_limit(user_abort_pipe[0], cap_rights_init(&rights,
+	if (cap_rights_limit(pipe_event_fd, cap_rights_init(&rights,
 			CAP_EVENT)))
 		goto error;
 
-	if (cap_rights_limit(user_abort_pipe[1], cap_rights_init(&rights,
+	if (cap_rights_limit(pipe_write_fd, cap_rights_init(&rights,
 			CAP_WRITE)))
 		goto error;
 

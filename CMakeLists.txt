@@ -158,6 +158,10 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 # On Apple OSes, don't build executables as bundles:
 set(CMAKE_MACOSX_BUNDLE OFF)
 
+# Set CMAKE_INSTALL_LIBDIR and friends. This needs to be done before
+# the LOCALEDIR_DEFINITION workaround below.
+include(GNUInstallDirs)
+
 # windres from GNU binutils can be tricky with command line arguments
 # that contain spaces or other funny characters. Unfortunately we need
 # a space in PACKAGE_NAME. Using \x20 to encode the US-ASCII space seems
@@ -185,10 +189,15 @@ if((MINGW OR CYGWIN OR MSYS) AND (
     # Keep the original PACKAGE_NAME intact for generation of liblzma.pc.
     string(APPEND CMAKE_RC_FLAGS " --use-temp-file")
     string(REPLACE " " "\\x20" PACKAGE_NAME_DEFINITION "${PACKAGE_NAME}")
+
+    # Use octal because "Program Files" would become \x20F.
+    string(REPLACE " " "\\040" LOCALEDIR_DEFINITION
+           "${CMAKE_INSTALL_FULL_LOCALEDIR}")
 else()
     # Elsewhere a space is safe. This also keeps things compatible with
     # EBCDIC in case CMake-based build is ever done on such a system.
     set(PACKAGE_NAME_DEFINITION "${PACKAGE_NAME}")
+    set(LOCALEDIR_DEFINITION "${CMAKE_INSTALL_FULL_LOCALEDIR}")
 endif()
 
 # Definitions common to all targets:
@@ -264,7 +273,7 @@ endif()
 # Translation support requires CMake 3.20 because it added the Intl::Intl
 # target so we don't need to play with the individual variables.
 #
-# The defintion ENABLE_NLS is added only to those targets that use it, thus
+# The definition ENABLE_NLS is added only to those targets that use it, thus
 # it's not done here. (xz has translations, xzdec doesn't.)
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
     find_package(Intl)
@@ -810,6 +819,10 @@ if(MICROLZMA_DECODER)
     target_sources(liblzma PRIVATE src/liblzma/common/microlzma_decoder.c)
 endif()
 
+if (MICROLZMA_ENCODER OR MICROLZMA_DECODER)
+    add_compile_definitions(HAVE_MICROLZMA)
+endif()
+
 
 #############################
 # lzip (.lz) format support #
@@ -888,10 +901,29 @@ endif()
 
 # Sandboxing: Landlock
 if(NOT SANDBOX_FOUND AND ENABLE_SANDBOX MATCHES "^ON$|^landlock$")
-    check_include_file(linux/landlock.h HAVE_LINUX_LANDLOCK_H)
+    # A compile check is done here because some systems have
+    # linux/landlock.h, but do not have the syscalls defined
+    # in order to actually use Linux Landlock.
+    check_c_source_compiles("
+        #include <linux/landlock.h>
+        #include <sys/syscall.h>
+        #include <sys/prctl.h>
+.
+        void my_sandbox(void)
+        {
+            (void)prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
+            (void)SYS_landlock_create_ruleset;
+            (void)SYS_landlock_restrict_self;
+            (void)LANDLOCK_CREATE_RULESET_VERSION;
+            return;
+        }
 
-    if(HAVE_LINUX_LANDLOCK_H)
-        set(SANDBOX_COMPILE_DEFINITION "HAVE_LINUX_LANDLOCK_H")
+        int main(void) { return 0; }
+        "
+    HAVE_LINUX_LANDLOCK)
+
+    if(HAVE_LINUX_LANDLOCK)
+        set(SANDBOX_COMPILE_DEFINITION "HAVE_LINUX_LANDLOCK")
         set(SANDBOX_FOUND ON)
 
         # Of our three sandbox methods, only Landlock is incompatible
@@ -1306,9 +1338,6 @@ endif()
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
         "${LZMA_CONFIG_CONTENTS}")
 
-# Set CMAKE_INSTALL_LIBDIR and friends.
-include(GNUInstallDirs)
-
 # Create liblzma.pc.
 set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "${CMAKE_INSTALL_PREFIX}")
@@ -1596,7 +1625,7 @@ if(HAVE_DECODERS AND (NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900))
         target_compile_definitions(lzmainfo PRIVATE
                 ENABLE_NLS
                 PACKAGE="${TRANSLATION_DOMAIN}"
-                LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}"
+                LOCALEDIR="${LOCALEDIR_DEFINITION}"
         )
     endif()
 
@@ -1750,7 +1779,7 @@ if(NOT MSVC OR MSVC_VERSION GREATER_EQUAL 1900)
         target_compile_definitions(xz PRIVATE
                 ENABLE_NLS
                 PACKAGE="${TRANSLATION_DOMAIN}"
-                LOCALEDIR="${CMAKE_INSTALL_FULL_LOCALEDIR}"
+                LOCALEDIR="${LOCALEDIR_DEFINITION}"
         )
 
         file(STRINGS po/LINGUAS LINGUAS)
@@ -1974,6 +2003,7 @@ if(BUILD_TESTING)
         test_index_hash
         test_lzip_decoder
         test_memlimit
+        test_microlzma
         test_stream_flags
         test_vli
     )
