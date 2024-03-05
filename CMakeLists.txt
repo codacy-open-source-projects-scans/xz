@@ -278,8 +278,42 @@ endif()
 if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
     find_package(Intl)
     find_package(Gettext)
+
     if(Intl_FOUND)
         option(ENABLE_NLS "Native Language Support (translated messages)" ON)
+
+        # If translation support is enabled but neither gettext tools or
+        # pre-generated .gmo files exist, translation support cannot be
+        # enabled.
+        #
+        # The detection of pre-generated .gmo files is done by only
+        # checking for the existence of a single .gmo file; Ukrainian
+        # is one of many translations that gets regular updates.
+        if(ENABLE_NLS AND NOT GETTEXT_FOUND AND
+                NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po/uk.gmo")
+            # This only sets the variable, not the cache variable!
+            set(ENABLE_NLS OFF)
+
+            # This message is shown only when new enough CMake is used and
+            # library support for translations was found. The assumptions is
+            # that in this situation the user might have interest in the
+            # translations. This also keeps this code simpler.
+            message(WARNING "Native language support (NLS) has been disabled. "
+                            "NLS support requires either gettext tools or "
+                            "pre-generated .gmo files. The latter are only "
+                            "available in distribution tarballs. "
+                            "To avoid this warning, NLS can be explicitly "
+                            "disabled by passing -DENABLE_NLS=OFF to cmake.")
+        endif()
+
+        # Warn if NLS is enabled but translated man pages are missing.
+        if(UNIX AND ENABLE_NLS AND
+                NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po4a/man")
+            message(WARNING "Native language support (NLS) has been enabled "
+                            "but pre-generated translated man pages "
+                            "were not found and thus they won't be installed. "
+                            "Run 'po4a/update-po' to generate them.")
+        endif()
 
         # The *installed* name of the translation files is "xz.mo".
         set(TRANSLATION_DOMAIN "xz")
@@ -1048,6 +1082,13 @@ if(USE_ATTR_IFUNC STREQUAL "auto")
             #endif
 
             static void func(void) { return; }
+
+            /*
+            * The attribute __no_profile_instrument_function__ is
+            * needed with GCC to prevent improper instrumentation in
+            * the ifunc resolver.
+            */
+            __attribute__((__no_profile_instrument_function__))
             static void (*resolve_func(void)) (void) { return func; }
             void func_ifunc(void)
                     __attribute__((__ifunc__(\"resolve_func\")));
