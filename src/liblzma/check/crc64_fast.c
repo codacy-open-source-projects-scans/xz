@@ -98,9 +98,7 @@ typedef uint64_t (*crc64_func_type)(
 #	pragma GCC diagnostic ignored "-Wunused-function"
 #endif
 
-#ifdef CRC_USE_IFUNC
-__attribute__((__no_profile_instrument_function__))
-#endif
+lzma_resolver_attributes
 static crc64_func_type
 crc64_resolve(void)
 {
