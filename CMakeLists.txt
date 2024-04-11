@@ -111,7 +111,7 @@ include(cmake/tuklib_mbstr.cmake)
 
 set(PACKAGE_NAME "XZ Utils")
 set(PACKAGE_BUGREPORT "xz@tukaani.org")
-set(PACKAGE_URL "https://xz.tukaani.org/xz-utils/")
+set(PACKAGE_URL "https://tukaani.org/xz/")
 
 # Get the package version from version.h into PACKAGE_VERSION variable.
 file(READ src/liblzma/api/lzma/version.h PACKAGE_VERSION)
@@ -1001,7 +1001,7 @@ if(NOT SANDBOX_FOUND AND ENABLE_SANDBOX MATCHES "^ON$|^landlock$")
         #include <linux/landlock.h>
         #include <sys/syscall.h>
         #include <sys/prctl.h>
-.
+
         void my_sandbox(void)
         {
             (void)prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
@@ -1098,85 +1098,6 @@ if(USE_WIN95_THREADS AND ENABLE_SMALL AND NOT HAVE_FUNC_ATTRIBUTE_CONSTRUCTOR)
                         "__attribute__((__constructor__))")
 endif()
 
-
-# Check for __attribute__((__ifunc__())) support.
-# Supported values for USE_ATTR_IFUNC:
-#
-# auto (default) - Detect ifunc support with a compile test.
-# ON             - Always enable ifunc.
-# OFF            - Disable ifunc usage.
-set(USE_ATTR_IFUNC "auto" CACHE STRING "Use __attribute__((__ifunc__())).")
-
-set(SUPPORTED_USE_ATTR_IFUNC auto ON OFF)
-
-if(NOT USE_ATTR_IFUNC IN_LIST SUPPORTED_USE_ATTR_IFUNC)
-    message(FATAL_ERROR "'${USE_ATTR_IFUNC}' is not a supported value for"
-                        "USE_ATTR_IFUNC")
-endif()
-
-# When USE_ATTR_IFUNC is 'auto', allow the use of __attribute__((__ifunc__()))
-# if compiler support is detected and we are building for GNU/Linux (glibc)
-# or FreeBSD. uClibc and musl don't support ifunc in their dynamic linkers
-# but some compilers still accept the attribute when compiling for these
-# C libraries, which results in broken binaries. That's why we need to
-# check which libc is being used.
-if(USE_ATTR_IFUNC STREQUAL "auto")
-    cmake_push_check_state()
-    set(CMAKE_REQUIRED_FLAGS "-Werror")
-
-    check_c_source_compiles("
-            /*
-             * Force a compilation error when not using glibc on Linux
-             * or if we are not using FreeBSD. uClibc will define
-             * __GLIBC__ but does not support ifunc, so we must have
-             * an extra check to disable with uClibc.
-             */
-            #if defined(__linux__)
-            #   include <features.h>
-            #   if !defined(__GLIBC__) || defined(__UCLIBC__)
-            compile error
-            #   endif
-            #elif !defined(__FreeBSD__)
-            compile error
-            #endif
-
-            static void func(void) { return; }
-
-            /*
-            * The attribute __no_profile_instrument_function__ is
-            * needed with GCC to prevent improper instrumentation in
-            * the ifunc resolver.
-            */
-            __attribute__((__no_profile_instrument_function__))
-            static void (*resolve_func(void)) (void) { return func; }
-            void func_ifunc(void)
-                    __attribute__((__ifunc__(\"resolve_func\")));
-            int main(void) { return 0; }
-            /*
-             * 'clang -Wall' incorrectly warns that resolve_func is
-             * unused (-Wunused-function). Correct assembly output is
-             * still produced. This problem exists at least in Clang
-             * versions 4 to 17. The following silences the bogus warning:
-             */
-            void make_clang_quiet(void);
-            void make_clang_quiet(void) { resolve_func()(); }
-        "
-        SYSTEM_SUPPORTS_IFUNC)
-
-        cmake_pop_check_state()
-endif()
-
-if(USE_ATTR_IFUNC STREQUAL "ON" OR SYSTEM_SUPPORTS_IFUNC)
-    tuklib_add_definitions(liblzma HAVE_FUNC_ATTRIBUTE_IFUNC)
-
-    if(CMAKE_C_FLAGS MATCHES "-fsanitize=")
-        message(SEND_ERROR
-                "CMAKE_C_FLAGS or the environment variable CFLAGS "
-                "contains '-fsanitize=' which is incompatible "
-                "with ifunc. Use -DUSE_ATTR_IFUNC=OFF "
-                "as an argument to 'cmake' when using '-fsanitize'.")
-    endif()
-endif()
 
 # cpuid.h
 check_include_file(cpuid.h HAVE_CPUID_H)

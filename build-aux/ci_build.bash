@@ -18,7 +18,7 @@ USAGE="Usage: $0
   -a [autogen flags]
   -b [autotools|cmake]
   -c [crc32|crc64|sha256]
-  -d [encoders|decoders|bcj|delta|threads|shared|nls|small|ifunc|clmul|sandbox]
+  -d [encoders|decoders|bcj|delta|threads|shared|nls|small|clmul|sandbox]
   -f [CFLAGS]
   -l [destdir]
   -m [compiler]
@@ -41,7 +41,6 @@ THREADS="y"
 SHARED="y"
 NATIVE_LANG_SUPPORT="y"
 SMALL="n"
-IFUNC="y"
 CLMUL="y"
 SANDBOX="y"
 SRC_DIR="$ABS_DIR/../"
@@ -49,12 +48,15 @@ DEST_DIR="$SRC_DIR/../xz_build"
 PHASE="all"
 ARTIFACTS_DIR_NAME="output"
 
+[[ -z ${CPU_COUNT} ]] && { CPU_COUNT=$(nproc 2>/dev/null || sysctl -n hw.ncpu); }
+[[ -z ${MAKEFLAGS} ]] && export MAKEFLAGS="-j${CPU_COUNT} -l${CPU_COUNT}"
+[[ -z ${CFLAGS} ]] && export CFLAGS="-O2"
 
 ###################
 # Parse arguments #
 ###################
 
-while getopts a:b:c:d:l:m:n:s:p:f:h opt; do
+while getopts a:b:c:d:l:m:n:s:p:f:w:h opt; do
 	# b option can have either value "autotools" OR "cmake"
 	case ${opt} in
 	h)
@@ -87,7 +89,6 @@ while getopts a:b:c:d:l:m:n:s:p:f:h opt; do
 		shared) SHARED="n";;
 		nls) NATIVE_LANG_SUPPORT="n";;
 		small) SMALL="y";;
-		ifunc) IFUNC="n";;
 		clmul) CLMUL="n";;
 		sandbox) SANDBOX="n";;
 		*) echo "Invalid disable value: $disable_arg"; exit 1 ;;
@@ -107,8 +108,10 @@ while getopts a:b:c:d:l:m:n:s:p:f:h opt; do
 	p) PHASE="$OPTARG"
 	;;
 	f)
-		CFLAGS="$OPTARG"
+		CFLAGS+=" $OPTARG"
 		export CFLAGS
+	;;
+	w) WRAPPER="$OPTARG"
 	;;
 	esac
 done
@@ -211,7 +214,6 @@ then
 		add_extra_option "$SHARED" "" "--disable-shared"
 		add_extra_option "$NATIVE_LANG_SUPPORT" "" "--disable-nls"
 		add_extra_option "$SMALL" "--enable-small" ""
-		add_extra_option "$IFUNC" "" "--disable-ifunc"
 		add_extra_option "$CLMUL" "" "--disable-clmul-crc"
 		add_extra_option "$SANDBOX" "" "--enable-sandbox=no"
 
@@ -263,7 +265,7 @@ then
 	autotools)
 		cd "$DEST_DIR"
 		# If the tests fail, copy the test logs into the artifacts folder
-		if make check
+		if make check VERBOSE=1 LOG_COMPILER="$WRAPPER"
 		then
 			:
 		else
@@ -274,7 +276,7 @@ then
 	;;
 	cmake)
 		cd "$DEST_DIR"
-		if make test
+		if ${WRAPPER} make test
 		then
 			:
 		else
