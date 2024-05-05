@@ -36,18 +36,6 @@ dist_examples_DATA = \
 	doc/examples/04_compress_easy_mt.c \
 	doc/examples/11_file_info.c \
 	doc/examples/Makefile
-
-# Install the Doxygen generated documentation if they were built.
-install-data-local:
-	if test -d "$(srcdir)/doc/api" ; then \
-		$(MKDIR_P) "$(DESTDIR)$(docdir)/api" && \
-		$(INSTALL_DATA) "$(srcdir)"/doc/api/* \
-			"$(DESTDIR)$(docdir)/api"; \
-	fi
-
-# Remove the Doxygen generated documentation when uninstalling.
-uninstall-local:
-	rm -rf "$(DESTDIR)$(docdir)/api"
 endif
 
 EXTRA_DIST = \
@@ -71,7 +59,8 @@ EXTRA_DIST = \
 
 ACLOCAL_AMFLAGS = -I m4
 
-# List of man pages to convert to PDF and plain text in the dist-hook target.
+# List of man pages to convert to plain text in the dist-hook target
+# or to PDF in the pdf-local target.
 manfiles = \
 	src/xz/xz.1 \
 	src/xzdec/xzdec.1 \
@@ -82,33 +71,22 @@ manfiles = \
 	src/scripts/xzmore.1
 
 # Create ChangeLog from output of "git log --date=iso --stat".
-# Convert the man pages to PDF and plain text (ASCII only) formats.
+# Convert the man pages to plain text (ASCII only) format.
 dist-hook:
 	if test -d "$(srcdir)/.git" && type git > /dev/null 2>&1; then \
 		( cd "$(srcdir)" && git log --date=iso --stat \
 			b69da6d4bb6bb11fc0cf066920791990d2b22a06^..HEAD ) \
 			> "$(distdir)/ChangeLog"; \
 	fi
-	if type groff > /dev/null 2>&1 && type ps2pdf > /dev/null 2>&1; then \
+	if type groff > /dev/null 2>&1; then \
 		dest="$(distdir)/doc/man" && \
-		$(MKDIR_P) "$$dest/pdf-a4" "$$dest/pdf-letter" "$$dest/txt" && \
+		$(MKDIR_P) "$$dest/txt" && \
 		for FILE in $(manfiles); do \
 			BASE=`basename $$FILE .1` && \
-			sh "$(srcdir)/build-aux/manconv.sh" pdf a4 \
-				< "$(srcdir)/$$FILE" \
-				> "$$dest/pdf-a4/$$BASE-a4.pdf" && \
-			sh "$(srcdir)/build-aux/manconv.sh" pdf letter \
-				< "$(srcdir)/$$FILE" \
-				> "$$dest/pdf-letter/$$BASE-letter.pdf" && \
 			sh "$(srcdir)/build-aux/manconv.sh" ascii \
 				< "$(srcdir)/$$FILE" \
 				> "$$dest/txt/$$BASE.txt"; \
 		done; \
-	fi
-	if test -d "$(srcdir)/doc/api" ; then \
-		$(MKDIR_P) "$(distdir)/doc/api" && \
-		$(INSTALL_DATA) "$(srcdir)"/doc/api/* \
-			"$(distdir)/doc/api"; \
 	fi
 
 # This works with GNU tar and gives cleaner package than normal 'make dist'.
@@ -117,7 +95,6 @@ dist-hook:
 mydist:
 	sh "$(srcdir)/src/liblzma/validate_map.sh"
 	cd "$(srcdir)/po4a" && sh update-po
-	cd "$(srcdir)/doxygen" && sh update-doxygen
 	VERSION=$(VERSION); \
 	if test -d "$(srcdir)/.git" && type git > /dev/null 2>&1; then \
 		SNAPSHOT=`cd "$(srcdir)" && git describe --abbrev=4 | cut -b2-`; \
@@ -125,3 +102,17 @@ mydist:
 	fi; \
 	TAR_OPTIONS='--owner=0 --group=0 --numeric-owner --mode=u+rw,go+r-w' \
 		$(MAKE) VERSION="$$VERSION" dist-gzip
+
+# NOTE: This only creates the PDFs. The install rules are missing.
+pdf-local:
+	dest="doc/man" && \
+	$(MKDIR_P) "$$dest/pdf-a4" "$$dest/pdf-letter" && \
+	for FILE in $(manfiles); do \
+		BASE=`basename $$FILE .1` && \
+		sh "$(srcdir)/build-aux/manconv.sh" pdf a4 \
+			< "$(srcdir)/$$FILE" \
+			> "$$dest/pdf-a4/$$BASE-a4.pdf" && \
+		sh "$(srcdir)/build-aux/manconv.sh" pdf letter \
+			< "$(srcdir)/$$FILE" \
+			> "$$dest/pdf-letter/$$BASE-letter.pdf"; \
+	done

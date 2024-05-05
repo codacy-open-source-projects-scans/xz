@@ -68,9 +68,7 @@ Package contents
                       liblzma.def is in this directory too.
 
         doc/manuals   The manuals of the command line tools in
-                      plain text (TXT) and PDF formats.
-
-        doc/api       liblzma API documentation in HTML format.
+                      plain text (TXT) format.
 
         doc/examples  Example programs for basic liblzma usage.
 
