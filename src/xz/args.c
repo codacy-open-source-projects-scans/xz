@@ -92,6 +92,12 @@ parse_block_list(const char *str_const)
 	free(opt_block_list);
 	opt_block_list = xmalloc((count + 1) * sizeof(block_list_entry));
 
+	// Clear the bitmask of filter chains in use.
+	block_list_chain_mask = 0;
+
+	// Reset the largest Block size found in --block-list.
+	block_list_largest = 0;
+
 	for (size_t i = 0; i < count; ++i) {
 		// Locate the next comma and replace it with \0.
 		char *p = strchr(str, ',');
@@ -99,7 +105,7 @@ parse_block_list(const char *str_const)
 			*p = '\0';
 
 		// Use the default filter chain unless overridden.
-		opt_block_list[i].filters_index = 0;
+		opt_block_list[i].chain_num = 0;
 
 		// To specify a filter chain, the block list entry may be
 		// prepended with "[filter-chain-number]:". The size is
@@ -126,10 +132,13 @@ parse_block_list(const char *str_const)
 						"filter chain number '%c:'"),
 						str[0]);
 
-			int filter_num = str[0] - '0';
-			opt_block_list[i].filters_index =
-					(uint32_t)filter_num;
+			const unsigned chain_num = (unsigned)(str[0] - '0');
+			opt_block_list[i].chain_num = chain_num;
+			block_list_chain_mask |= 1U << chain_num;
 			str += 2;
+		} else {
+			// This Block uses the default filter chain.
+			block_list_chain_mask |= 1U << 0;
 		}
 
 		if (str[0] == '\0') {
@@ -153,6 +162,14 @@ parse_block_list(const char *str_const)
 
 				opt_block_list[i].size = UINT64_MAX;
 			}
+
+			// Remember the largest Block size in the list.
+			//
+			// NOTE: Do this after handling the special value 0
+			// because when 0 is used, we don't want to reduce
+			// the Block size of the multithreaded encoder.
+			if (block_list_largest < opt_block_list[i].size)
+				block_list_largest = opt_block_list[i].size;
 		}
 
 		// Be standards compliant: p + 1 is undefined behavior
