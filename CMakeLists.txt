@@ -117,7 +117,9 @@ set(PACKAGE_NAME "XZ Utils")
 set(PACKAGE_BUGREPORT "xz@tukaani.org")
 set(PACKAGE_URL "https://tukaani.org/xz/")
 
-# Get the package version from version.h into PACKAGE_VERSION variable.
+# Get the package version from version.h into PACKAGE_VERSION_SHORT and
+# PACKAGE_VERSION. The former variable won't include the possible "alpha"
+# or "beta" suffix.
 file(READ src/liblzma/api/lzma/version.h PACKAGE_VERSION)
 string(REGEX REPLACE
 "^.*\n\
@@ -127,7 +129,15 @@ string(REGEX REPLACE
 .*\
 #define LZMA_VERSION_PATCH ([0-9]+)\n\
 .*$"
-       "\\1.\\2.\\3" PACKAGE_VERSION "${PACKAGE_VERSION}")
+       "\\1.\\2.\\3" PACKAGE_VERSION_SHORT "${PACKAGE_VERSION}")
+
+if(PACKAGE_VERSION MATCHES "\n#define [A-Z_ ]*_ALPHA\n")
+    set(PACKAGE_VERSION "${PACKAGE_VERSION_SHORT}alpha")
+elseif(PACKAGE_VERSION MATCHES "\n#define [A-Z_ ]*_BETA\n")
+    set(PACKAGE_VERSION "${PACKAGE_VERSION_SHORT}beta")
+else()
+    set(PACKAGE_VERSION "${PACKAGE_VERSION_SHORT}")
+endif()
 
 # With several compilers, CMAKE_BUILD_TYPE=Release uses -O3 optimization
 # which results in bigger code without a clear difference in speed. If
@@ -138,7 +148,7 @@ if(NOT DEFINED CMAKE_C_FLAGS_RELEASE)
 endif()
 
 # Among other things, this gives us variables xz_VERSION and xz_VERSION_MAJOR.
-project(xz VERSION "${PACKAGE_VERSION}" LANGUAGES C)
+project(xz VERSION "${PACKAGE_VERSION_SHORT}" LANGUAGES C)
 
 if(OVERRIDE_O3_IN_C_FLAGS_RELEASE)
     # Looking at CMake's source, there aren't any _FLAGS_RELEASE_INIT
@@ -1317,11 +1327,37 @@ set_target_properties(liblzma PROPERTIES
     SOVERSION "${xz_VERSION_MAJOR}"
     VERSION "${xz_VERSION}"
 
-    # It's liblzma.so or liblzma.dll, not libliblzma.so or lzma.dll.
-    # Avoid the name lzma.dll because it would conflict with LZMA SDK.
-    PREFIX ""
-    IMPORT_PREFIX ""
+    # The name liblzma a mess because in many places "lib" is just a prefix
+    # and not part of the actual name. (Don't name a new library this way!)
+    # Cygwin uses "cyg", MSYS2 uses "msys-", and some platforms use no prefix.
+    # However, we want to avoid lzma.dll on Windows as that would conflict
+    # with LZMA SDK. liblzma has been liblzma.dll on Windows since the
+    # beginning so try to stick with it.
+    #
+    # Up to XZ Utils 5.6.2 we set PREFIX and IMPORT_PREFIX properties to ""
+    # while keeping the default "liblzma" OUTPUT_NAME that was derived from
+    # the target name. But this broke naming on Cygwin and MSYS2.
+    #
+    # Setting OUTPUT_NAME without the "lib" prefix means that CMake will add
+    # the platform-specific prefix as needed. So on most systems CMake will
+    # add "lib" but on Cygwin and MSYS2 the naming will be correct too.
+    #
+    # On Windows, CMake uses the "lib" prefix with MinGW-w64 but not with
+    # other toolchains. Those those need to be handled specially to get
+    # the DLL file named liblzma.dll instead of lzma.dll.
+    OUTPUT_NAME "lzma"
 )
+
+if(WIN32 AND NOT MINGW)
+    # Up to XZ Utils 5.6.2 and building with MSVC, we produced liblzma.dll
+    # and liblzma.lib. The downside of liblzma.lib is that it's not
+    # compatible with pkgconf usage. liblzma.pc contains "-llzma" which
+    # "pkgconf --msvc-syntax --libs liblzma" converts to "lzma.lib".
+    # So as a compromise, we can keep the liblzma.dll name but the import
+    # library and static liblzma need to be named lzma.lib so that pkgconf
+    # can be used with MSVC. (MinGW-w64 finds both names with "-llzma".)
+    set_target_properties(liblzma PROPERTIES RUNTIME_OUTPUT_NAME "liblzma")
+endif()
 
 # Create liblzma-config-version.cmake.
 #
@@ -1330,7 +1366,7 @@ set_target_properties(liblzma PROPERTIES
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config-version.cmake"
-    VERSION "${liblzma_VERSION}"
+    VERSION "${xz_VERSION}"
     COMPATIBILITY SameMajorVersion)
 
 # Create liblzma-config.cmake. We use this spelling instead of
@@ -1368,9 +1404,9 @@ file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
 
 # Create liblzma.pc.
 set(prefix "${CMAKE_INSTALL_PREFIX}")
-set(exec_prefix "${CMAKE_INSTALL_PREFIX}")
-set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
-set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+set(exec_prefix "\${prefix}")
+set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
+set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
 set(PTHREAD_CFLAGS "${CMAKE_THREAD_LIBS_INIT}")
 configure_file(src/liblzma/liblzma.pc.in liblzma.pc
                @ONLY
@@ -1411,11 +1447,9 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
         DESTINATION "${liblzma_INSTALL_CMAKEDIR}"
         COMPONENT liblzma_Development)
 
-if(NOT MSVC)
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma.pc"
-            DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
-            COMPONENT liblzma_Development)
-endif()
+install(FILES "${CMAKE_CURRENT_BINARY_DIR}/liblzma.pc"
+        DESTINATION "${CMAKE_INSTALL_LIBDIR}/pkgconfig"
+        COMPONENT liblzma_Development)
 
 
 #############################################################################
