@@ -14,7 +14,7 @@
 #include "crc_common.h"
 
 #if defined(CRC_X86_CLMUL)
-#	define BUILDING_CRC64_CLMUL
+#	define BUILDING_CRC_CLMUL 64
 #	include "crc_x86_clmul.h"
 #endif
 
@@ -133,12 +133,15 @@ crc64_dispatch(const uint8_t *buf, size_t size, uint64_t crc)
 extern LZMA_API(uint64_t)
 lzma_crc64(const uint8_t *buf, size_t size, uint64_t crc)
 {
-#if defined(CRC64_GENERIC) && defined(CRC64_ARCH_OPTIMIZED)
-
-#ifdef CRC_USE_GENERIC_FOR_SMALL_INPUTS
-	if (size <= 16)
-		return crc64_generic(buf, size, crc);
+#if defined(_MSC_VER) && !defined(__INTEL_COMPILER) && !defined(__clang__) \
+		&& defined(_M_IX86) && defined(CRC64_ARCH_OPTIMIZED)
+	// VS2015-2022 might corrupt the ebx register on 32-bit x86 when
+	// the CLMUL code is enabled. This hack forces MSVC to store and
+	// restore ebx. This is only needed here, not in lzma_crc32().
+	__asm  mov ebx, ebx
 #endif
+
+#if defined(CRC64_GENERIC) && defined(CRC64_ARCH_OPTIMIZED)
 	return crc64_func(buf, size, crc);
 
 #elif defined(CRC64_ARCH_OPTIMIZED)

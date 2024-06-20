@@ -162,12 +162,17 @@ if(OVERRIDE_O3_IN_C_FLAGS_RELEASE)
 endif()
 
 # We need a compiler that supports enough C99 or newer (variable-length arrays
-# aren't needed, those are optional in C17). Setting CMAKE_C_STANDARD here
-# makes it the default for all targets. It doesn't affect the INTERFACE so
-# liblzma::liblzma won't end up with INTERFACE_COMPILE_FEATURES "c_std_99"
-# (the API headers are C89 and C++ compatible).
-set(CMAKE_C_STANDARD 99)
-set(CMAKE_C_STANDARD_REQUIRED ON)
+# aren't needed, those are optional in C11/C17). C11 is preferred since C11
+# features may be optionally used if they are available.
+#
+# Setting CMAKE_C_STANDARD here makes it the default for all targets.
+# It doesn't affect the INTERFACE so liblzma::liblzma won't end up with
+# INTERFACE_COMPILE_FEATURES "c_std_99" or such (the API headers are C89
+# and C++ compatible).
+#
+# Avoid set(CMAKE_C_STANDARD_REQUIRED ON) because it's fine to decay
+# to C99 if C11 isn't supported.
+set(CMAKE_C_STANDARD 11)
 
 # Support 32-bit x86 assembly files.
 if(NOT MSVC)
@@ -634,7 +639,7 @@ if(ENABLE_THREADS)
             # liblzma-config.cmake later.
             set(USE_POSIX_THREADS ON)
 
-            target_link_libraries(liblzma Threads::Threads)
+            target_link_libraries(liblzma PRIVATE Threads::Threads)
             add_compile_definitions(MYTHREAD_POSIX)
 
             # Check if pthread_condattr_setclock() exists to
@@ -1220,6 +1225,12 @@ if(ALLOW_ARM64_CRC32)
         check_symbol_exists(elf_aux_info sys/auxv.h HAVE_ELF_AUX_INFO)
         tuklib_add_definition_if(liblzma HAVE_ELF_AUX_INFO)
 
+        # OpenBSD has a sysctl() based method. The macro CPU_ID_AA64ISAR0
+        # is used to detect when it's available.
+        check_symbol_exists(CPU_ID_AA64ISAR0 machine/cpu.h
+                            HAVE_CPU_ID_AA64ISAR0)
+        tuklib_add_definition_if(liblzma HAVE_CPU_ID_AA64ISAR0)
+
         # sysctlbyname("hw.optional.armv8_crc32", ...) is supported on Darwin
         # (macOS, iOS, etc.). Note that sysctlbyname() is supported on FreeBSD,
         # NetBSD, and possibly others too but the string is specific to
@@ -1402,15 +1413,31 @@ endif()
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/liblzma-config.cmake"
         "${LZMA_CONFIG_CONTENTS}")
 
-# Create liblzma.pc.
+
+# Create liblzma.pc. If using CMake >= 3.20 and CMAKE_INSTALL_<dir> paths
+# are relative to CMAKE_INSTALL_PREFIX, the .pc file will be relocatable
+# (that is, all paths will be relative to ${prefix}). Otherwise absolute
+# paths will be used.
 set(prefix "${CMAKE_INSTALL_PREFIX}")
 set(exec_prefix "\${prefix}")
-set(libdir "\${exec_prefix}/${CMAKE_INSTALL_LIBDIR}")
-set(includedir "\${prefix}/${CMAKE_INSTALL_INCLUDEDIR}")
-set(PTHREAD_CFLAGS "${CMAKE_THREAD_LIBS_INIT}")
-configure_file(src/liblzma/liblzma.pc.in liblzma.pc
-               @ONLY
-               NEWLINE_STYLE LF)
+
+if(CMAKE_VERSION VERSION_GREATER_EQUAL "3.20")
+    cmake_path(APPEND libdir "\${exec_prefix}" "${CMAKE_INSTALL_LIBDIR}")
+    cmake_path(APPEND includedir "\${prefix}" "${CMAKE_INSTALL_INCLUDEDIR}")
+else()
+    set(libdir "${CMAKE_INSTALL_FULL_LIBDIR}")
+    set(includedir "${CMAKE_INSTALL_FULL_INCLUDEDIR}")
+endif()
+
+# Threads::Threads is linked in only when using POSIX threads.
+# Use an empty value if using Windows threads or if threading is disabled.
+set(PTHREAD_CFLAGS)
+if(USE_POSIX_THREADS)
+    set(PTHREAD_CFLAGS "${CMAKE_THREAD_LIBS_INIT}")
+endif()
+
+configure_file(src/liblzma/liblzma.pc.in liblzma.pc @ONLY)
+
 
 # Install the library binary. The INCLUDES specifies the include path that
 # is exported for other projects to use but it doesn't install any files.
