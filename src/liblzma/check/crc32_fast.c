@@ -19,6 +19,8 @@
 #	include "crc_x86_clmul.h"
 #elif defined(CRC32_ARM64)
 #	include "crc32_arm64.h"
+#elif defined(CRC32_LOONGARCH)
+#	include "crc32_loongarch.h"
 #endif
 
 
@@ -28,8 +30,19 @@
 // Generic CRC32 //
 ///////////////////
 
+#ifdef WORDS_BIGENDIAN
+#	include "crc32_table_be.h"
+#else
+#	include "crc32_table_le.h"
+#endif
+
+
+#ifdef HAVE_CRC_X86_ASM
+extern uint32_t lzma_crc32_generic(
+		const uint8_t *buf, size_t size, uint32_t crc);
+#else
 static uint32_t
-crc32_generic(const uint8_t *buf, size_t size, uint32_t crc)
+lzma_crc32_generic(const uint8_t *buf, size_t size, uint32_t crc)
 {
 	crc = ~crc;
 
@@ -85,7 +98,8 @@ crc32_generic(const uint8_t *buf, size_t size, uint32_t crc)
 
 	return ~crc;
 }
-#endif
+#endif // HAVE_CRC_X86_ASM
+#endif // CRC32_GENERIC
 
 
 #if defined(CRC32_GENERIC) && defined(CRC32_ARCH_OPTIMIZED)
@@ -119,7 +133,7 @@ static crc32_func_type
 crc32_resolve(void)
 {
 	return is_arch_extension_supported()
-			? &crc32_arch_optimized : &crc32_generic;
+			? &crc32_arch_optimized : &lzma_crc32_generic;
 }
 
 
@@ -178,6 +192,6 @@ lzma_crc32(const uint8_t *buf, size_t size, uint32_t crc)
 	return crc32_arch_optimized(buf, size, crc);
 
 #else
-	return crc32_generic(buf, size, crc);
+	return lzma_crc32_generic(buf, size, crc);
 #endif
 }

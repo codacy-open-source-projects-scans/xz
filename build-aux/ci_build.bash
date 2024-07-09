@@ -166,15 +166,7 @@ then
 	CHECK_TYPE_TEMP=""
 	for crc in $(echo "$CHECK_TYPE" | sed "s/,/ /g"); do
 			case "$crc" in
-			# Remove "crc32" from cmake build, if specified.
-			crc32)
-				if [ "$BUILD_SYSTEM" = "cmake" ]
-				then
-					continue
-				fi
-			;;
-			crc64) ;;
-			sha256) ;;
+			crc32 | crc64 | sha256) ;;
 			*) echo "Invalid check type: $crc"; exit 1 ;;
 			esac
 
@@ -217,6 +209,15 @@ then
 		add_extra_option "$CLMUL" "" "--disable-clmul-crc"
 		add_extra_option "$SANDBOX" "" "--enable-sandbox=no"
 
+		# Workaround a bug in too old config.guess. Version with
+		# timestamp='2022-05-08' would be needed but the autotools-dev
+		# package has 2022-01-09 in Ubuntu 22.04LTS and 24.04LTS. The
+		# bug breaks i386 assembler usage autodetection.
+		if "$SRC_DIR/build-aux/config.guess" | grep -q x86_64-pc-linux-gnux32
+		then
+			EXTRA_OPTIONS="$EXTRA_OPTIONS --build=i686-pc-linux-gnu"
+		fi
+
 		# Run configure script
 		"$SRC_DIR"/configure --enable-werror --enable-checks="$CHECK_TYPE" $EXTRA_OPTIONS --config-cache
 
@@ -229,26 +230,22 @@ then
 		add_to_filter_list "$BCJ" ";x86;powerpc;ia64;arm;armthumb;arm64;sparc;riscv"
 		add_to_filter_list "$DELTA" ";delta"
 
-		add_extra_option "$THREADS" "-DENABLE_THREADS=ON" "-DENABLE_THREADS=OFF"
+		add_extra_option "$THREADS" "-DXZ_THREADS=yes" "-DXZ_THREADS=no"
 
 		# Disable MicroLZMA if encoders are not configured.
-		add_extra_option "$ENCODERS" "-DENCODERS=$FILTER_LIST" "-DENCODERS= -DMICROLZMA_ENCODER=OFF"
+		add_extra_option "$ENCODERS" "-DXZ_ENCODERS=$FILTER_LIST" "-DXZ_ENCODERS= -DXZ_MICROLZMA_ENCODER=OFF"
 
 		# Disable MicroLZMA and lzip decoders if decoders are not configured.
-		add_extra_option "$DECODERS" "-DDECODERS=$FILTER_LIST" "-DDECODERS= -DMICROLZMA_DECODER=OFF -DLZIP_DECODER=OFF"
+		add_extra_option "$DECODERS" "-DXZ_DECODERS=$FILTER_LIST" "-DXZ_DECODERS= -DXZ_MICROLZMA_DECODER=OFF -DXZ_LZIP_DECODER=OFF"
 
 		# CMake disables the shared library by default.
 		add_extra_option "$SHARED" "-DBUILD_SHARED_LIBS=ON" ""
 
-		add_extra_option "$SMALL" "-DHAVE_SMALL=ON" ""
-
-		if test -n "$CC" ; then
-			EXTRA_OPTIONS="$EXTRA_OPTIONS -DCMAKE_C_COMPILER=$CC"
-		fi
+		add_extra_option "$SMALL" "-DXZ_SMALL=ON" ""
 
 		# Remove old cache file to clear previous settings.
 		rm -f "CMakeCache.txt"
-		cmake "$SRC_DIR/CMakeLists.txt" -B "$DEST_DIR" $EXTRA_OPTIONS -DADDITIONAL_CHECK_TYPES="$CHECK_TYPE" -G "Unix Makefiles"
+		cmake "$SRC_DIR/CMakeLists.txt" -B "$DEST_DIR" $EXTRA_OPTIONS -DXZ_CHECKS="$CHECK_TYPE" -G "Unix Makefiles"
 		cmake --build "$DEST_DIR"
 	;;
 	esac
