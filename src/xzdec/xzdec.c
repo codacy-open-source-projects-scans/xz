@@ -41,7 +41,9 @@
 #endif
 
 #include "getopt.h"
+#include "tuklib_gettext.h"
 #include "tuklib_progname.h"
+#include "tuklib_mbstr_nonprint.h"
 #include "tuklib_exit.h"
 
 #ifdef TUKLIB_DOSLIKE
@@ -209,7 +211,8 @@ uncompress(lzma_stream *strm, FILE *file, const char *filename)
 				// an error occurred. ferror() doesn't
 				// touch errno.
 				my_errorf("%s: Error reading input file: %s",
-						filename, strerror(errno));
+					tuklib_mask_nonprint(filename),
+					strerror(errno));
 				exit(EXIT_FAILURE);
 			}
 
@@ -292,7 +295,8 @@ uncompress(lzma_stream *strm, FILE *file, const char *filename)
 				break;
 			}
 
-			my_errorf("%s: %s", filename, msg);
+			my_errorf("%s: %s", tuklib_mask_nonprint(filename),
+					msg);
 			exit(EXIT_FAILURE);
 		}
 	}
@@ -391,6 +395,9 @@ error:
 int
 main(int argc, char **argv)
 {
+	// Initialize progname which we will be used in error messages.
+	tuklib_progname_init(argv);
+
 #ifdef HAVE_PLEDGE
 	// OpenBSD's pledge(2) sandbox.
 	// Initially enable the sandbox slightly more relaxed so that
@@ -416,8 +423,18 @@ main(int argc, char **argv)
 	(void)prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0);
 #endif
 
-	// Initialize progname which we will be used in error messages.
-	tuklib_progname_init(argv);
+	// We need to set the locale even though we don't have any
+	// translated messages:
+	//
+	//   - tuklib_mask_nonprint() has locale-specific behavior (LC_CTYPE).
+	//
+	//   - This is needed on Windows to make non-ASCII filenames display
+	//     properly when the active code page has been set to UTF-8
+	//     in the application manifest. Use the helper macro from
+	//     tuklib_gettext.h instead of plain setlocale(LC_ALL, "")
+	//     because on Windows the standard call isn't enough for
+	//     full UTF-8 support.
+	tuklib_gettext_setlocale();
 
 	// Parse the command line options.
 	parse_options(argc, argv);
@@ -453,8 +470,10 @@ main(int argc, char **argv)
 				src_name = argv[optind];
 				src_file = fopen(src_name, "rb");
 				if (src_file == NULL) {
-					my_errorf("%s: %s", src_name,
-							strerror(errno));
+					my_errorf("%s: %s",
+						tuklib_mask_nonprint(
+							src_name),
+						strerror(errno));
 					exit(EXIT_FAILURE);
 				}
 			}

@@ -32,8 +32,10 @@ xz_SOURCES = \
 	../common/tuklib_open_stdxxx.c \
 	../common/tuklib_progname.c \
 	../common/tuklib_exit.c \
+	../common/tuklib_mbstr_fw.c \
+	../common/tuklib_mbstr_nonprint.c \
 	../common/tuklib_mbstr_width.c \
-	../common/tuklib_mbstr_fw.c
+	../common/tuklib_mbstr_wrap.c
 
 if COND_MAIN_DECODER
 xz_SOURCES += \
