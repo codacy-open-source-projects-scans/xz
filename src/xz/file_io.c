@@ -17,6 +17,7 @@
 #	include <io.h>
 #else
 #	include <poll.h>
+#	include <libgen.h>
 static bool warn_fchown;
 #endif
 
@@ -56,12 +57,35 @@ static bool warn_fchown;
 #	define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
 #endif
 
+#if defined(_WIN32) && !defined(__CYGWIN__)
+#	define fsync _commit
+#endif
+
 #ifndef O_BINARY
 #	define O_BINARY 0
 #endif
 
 #ifndef O_NOCTTY
 #	define O_NOCTTY 0
+#endif
+
+// In musl 1.2.5, O_SEARCH is defined to O_PATH. As of Linux 6.12,
+// a file descriptor from open("dir", O_SEARCH | O_DIRECTORY) cannot be
+// used with fsync() (fails with EBADF). musl 1.2.5 doesn't emulate it
+// using /proc/self/fd. Even if it did, it might need to do it with
+// fd = open("/proc/...", O_RDONLY); fsync(fd); which fails if the
+// directory lacks read permission. Since we need a working fsync(),
+// O_RDONLY imitates O_SEARCH better than O_PATH.
+#if defined(O_SEARCH) && defined(O_PATH) && O_SEARCH == O_PATH
+#	undef O_SEARCH
+#endif
+
+#ifndef O_SEARCH
+#	define O_SEARCH O_RDONLY
+#endif
+
+#ifndef O_DIRECTORY
+#	define O_DIRECTORY 0
 #endif
 
 // Using this macro to silence a warning from gcc -Wlogical-op.
@@ -450,6 +474,40 @@ io_copy_attrs(const file_pair *pair)
 }
 
 
+/// \brief      Synchronizes the destination file to permanent storage
+///
+/// \param      pair    File pair having the destination file open for writing
+///
+/// \return     On success, false is returned. On error, error message
+///             is printed and true is returned.
+static bool
+io_sync_dest(file_pair *pair)
+{
+	assert(pair->dest_fd != -1);
+	assert(pair->dest_fd != STDOUT_FILENO);
+
+	if (fsync(pair->dest_fd)) {
+		message_error(_("%s: Synchronizing the file failed: %s"),
+				tuklib_mask_nonprint(pair->dest_name),
+				strerror(errno));
+		return true;
+	}
+
+#if !defined(TUKLIB_DOSLIKE) && !defined(_AIX)
+	// On AIX, this would fail with EBADF.
+	if (fsync(pair->dir_fd)) {
+		message_error(_("%s: Synchronizing the directory of "
+				"the file failed: %s"),
+				tuklib_mask_nonprint(pair->dest_name),
+				strerror(errno));
+		return true;
+	}
+#endif
+
+	return false;
+}
+
+
 /// Opens the source file. Returns false on success, true on error.
 static bool
 io_open_src_real(file_pair *pair)
@@ -717,6 +775,9 @@ io_open_src(const char *src_name)
 		.dest_name = NULL,
 		.src_fd = -1,
 		.dest_fd = -1,
+#ifndef TUKLIB_DOSLIKE
+		.dir_fd = -1,
+#endif
 		.src_eof = false,
 		.src_has_seen_input = false,
 		.flush_needed = false,
@@ -819,6 +880,56 @@ io_open_dest_real(file_pair *pair)
 		if (pair->dest_name == NULL)
 			return true;
 
+#ifndef TUKLIB_DOSLIKE
+		if (opt_synchronous) {
+			// Open the directory where the destination file will
+			// be created (the file descriptor is needed for
+			// fsync()). Do this before creating the destination
+			// file:
+			//
+			//   - We currently have no files to clean up if
+			//     opening the directory fails. (We aren't
+			//     reading from stdin so there are no stdin_flags
+			//     to restore either.)
+			//
+			//   - Allocating memory with xstrdup() is safe only
+			//     when we have nothing to clean up.
+			char *buf = xstrdup(pair->dest_name);
+			const char *dir_name = dirname(buf);
+
+			// O_NOCTTY and O_NONBLOCK are there in case
+			// O_DIRECTORY is 0 and dir_name doesn't refer
+			// to a directory. (We opened the source file
+			// already but directories might have been renamed
+			// after the source file was opened.)
+			pair->dir_fd = open(dir_name, O_SEARCH | O_DIRECTORY
+					| O_NOCTTY | O_NONBLOCK);
+			if (pair->dir_fd == -1) {
+				// Since we did open the source file
+				// successfully, we should rarely get here.
+				// Perhaps something has been renamed or
+				// had its permissions changed.
+				//
+				// In an odd case, the directory has write
+				// and search permissions but not read
+				// permission (d-wx------), and O_SEARCH is
+				// actually O_RDONLY. Then we would be able
+				// to create a new file and only the directory
+				// syncing would be impossible. But let's be
+				// strict about syncing and require users to
+				// explicitly disable it if they don't want it.
+				message_error(_("%s: Opening the directory "
+					"failed: %s"),
+					tuklib_mask_nonprint(dir_name),
+					strerror(errno));
+				free(buf);
+				goto error;
+			}
+
+			free(buf);
+		}
+#endif
+
 #ifdef __DJGPP__
 		struct stat st;
 		if (stat(pair->dest_name, &st) == 0) {
@@ -828,8 +939,7 @@ io_open_dest_real(file_pair *pair)
 						"a DOS special file",
 						tuklib_mask_nonprint(
 							pair->dest_name));
-				free(pair->dest_name);
-				return true;
+				goto error;
 			}
 
 			// Check that we aren't overwriting the source file.
@@ -839,8 +949,7 @@ io_open_dest_real(file_pair *pair)
 						"as the input file",
 						tuklib_mask_nonprint(
 							pair->dest_name));
-				free(pair->dest_name);
-				return true;
+				goto error;
 			}
 		}
 #endif
@@ -850,8 +959,7 @@ io_open_dest_real(file_pair *pair)
 			message_error(_("%s: Cannot remove: %s"),
 					tuklib_mask_nonprint(pair->dest_name),
 					strerror(errno));
-			free(pair->dest_name);
-			return true;
+			goto error;
 		}
 
 		// Open the file.
@@ -867,9 +975,12 @@ io_open_dest_real(file_pair *pair)
 			message_error(_("%s: %s"),
 					tuklib_mask_nonprint(pair->dest_name),
 					strerror(errno));
-			free(pair->dest_name);
-			return true;
+			goto error;
 		}
+
+		// We could sync dir_fd now and close it. However, performance
+		// can be better if this is delayed until dest_fd has been
+		// synced in io_sync_dest().
 	}
 
 	if (fstat(pair->dest_fd, &pair->dest_st)) {
@@ -895,15 +1006,13 @@ io_open_dest_real(file_pair *pair)
 	// With fstat()/_fstat64() it works.
 	else if (pair->dest_fd != STDOUT_FILENO
 			&& !S_ISREG(pair->dest_st.st_mode)) {
-		message_error("%s: Destination is not a regular file",
+		message_error(_("%s: Destination is not a regular file"),
 				tuklib_mask_nonprint(pair->dest_name));
 
 		// dest_fd needs to be reset to -1 to keep io_close() working.
 		(void)close(pair->dest_fd);
 		pair->dest_fd = -1;
-
-		free(pair->dest_name);
-		return true;
+		goto error;
 	}
 #elif !defined(TUKLIB_DOSLIKE)
 	else if (try_sparse && opt_mode == MODE_DECOMPRESS) {
@@ -975,6 +1084,18 @@ io_open_dest_real(file_pair *pair)
 #endif
 
 	return false;
+
+error:
+#ifndef TUKLIB_DOSLIKE
+	// io_close() closes pair->dir_fd but let's do it here anyway.
+	if (pair->dir_fd != -1) {
+		(void)close(pair->dir_fd);
+		pair->dir_fd = -1;
+	}
+#endif
+
+	free(pair->dest_name);
+	return true;
 }
 
 
@@ -993,8 +1114,8 @@ io_open_dest(file_pair *pair)
 /// \param      pair    File whose dest_fd should be closed
 /// \param      success If false, the file will be removed from the disk.
 ///
-/// \return     Zero if closing succeeds. On error, -1 is returned and
-///             error message printed.
+/// \return     If closing succeeds, false is returned. On error, an error
+///             message is printed and true is returned.
 static bool
 io_close_dest(file_pair *pair, bool success)
 {
@@ -1016,6 +1137,13 @@ io_close_dest(file_pair *pair, bool success)
 
 	if (pair->dest_fd == -1 || pair->dest_fd == STDOUT_FILENO)
 		return false;
+
+#ifndef TUKLIB_DOSLIKE
+	// dir_fd was only used for syncing the directory.
+	// Error checking was done when syncing.
+	if (pair->dir_fd != -1)
+		(void)close(pair->dir_fd);
+#endif
 
 	if (close(pair->dest_fd)) {
 		message_error(_("%s: Closing the file failed: %s"),
@@ -1069,10 +1197,15 @@ io_close(file_pair *pair, bool success)
 
 	signals_block();
 
-	// Copy the file attributes. We need to skip this if destination
-	// file isn't open or it is standard output.
-	if (success && pair->dest_fd != -1 && pair->dest_fd != STDOUT_FILENO)
+	if (success && pair->dest_fd != -1 && pair->dest_fd != STDOUT_FILENO) {
+		// Copy the file attributes. This may produce warnings but
+		// not errors so "success" isn't affected.
 		io_copy_attrs(pair);
+
+		// Synchronize the file and its directory if needed.
+		if (opt_synchronous)
+			success = !io_sync_dest(pair);
+	}
 
 	// Close the destination first. If it fails, we must not remove
 	// the source file!
@@ -1254,6 +1387,19 @@ io_write_buf(file_pair *pair, const uint8_t *buf, size_t size)
 				if (io_wait(pair, -1, false) == IO_WAIT_MORE)
 					continue;
 
+				return true;
+			}
+#endif
+
+#if defined(_WIN32) && !defined(__CYGWIN__)
+			// On native Windows, broken pipe is reported as
+			// EINVAL. Don't show an error message in this case.
+			// Try: xz -dc bigfile.xz | head -n1
+			if (errno == EINVAL
+					&& pair->dest_fd == STDOUT_FILENO) {
+				// Emulate SIGPIPE by setting user_abort here.
+				user_abort = true;
+				set_exit_status(E_ERROR);
 				return true;
 			}
 #endif

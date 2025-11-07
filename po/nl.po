@@ -1,58 +1,58 @@
 # SPDX-License-Identifier: 0BSD
 #
-# German translation for xz.
+# Dutch translation for xz-utils.
 # This file is published under the BSD Zero Clause License.
-# André Noll <maan@tuebingen.mpg.de>, 2010.
-# Anna Henningsen <sqrt@entless.org>, 2015.
-# Mario Blättermann <mario.blaettermann@gmail.com>, 2019, 2022-2025.
+#
+# "Wie soll ich wissen was ich meine bevor ich höre was ich sage."
+#
+# Benno Schulenberg <vertaling@coevern.nl>, 2019, 2024, 2025.
 msgid ""
 msgstr ""
 "Project-Id-Version: xz 5.7.1-dev1\n"
 "Report-Msgid-Bugs-To: xz@tukaani.org\n"
 "POT-Creation-Date: 2025-01-29 20:59+0200\n"
-"PO-Revision-Date: 2025-01-26 11:02+0100\n"
-"Last-Translator: Mario Blättermann <mario.blaettermann@gmail.com>\n"
-"Language-Team: German <translation-team-de@lists.sourceforge.net>\n"
-"Language: de\n"
+"PO-Revision-Date: 2025-01-25 15:51+0100\n"
+"Last-Translator: Benno Schulenberg <vertaling@coevern.nl>\n"
+"Language-Team: Dutch <vertaling@vrijschrift.org>\n"
+"Language: nl\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
 "X-Bugs: Report translation errors to the Language-Team address.\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Lokalize 24.12.1\n"
 
 #: src/xz/args.c
 #, c-format
 msgid "%s: Invalid argument to --block-list"
-msgstr "%s: Ungültiges Argument für --block-list"
+msgstr "%s: Ongeldig argument bij --block-list"
 
 #: src/xz/args.c
 #, c-format
 msgid "%s: Too many arguments to --block-list"
-msgstr "%s: Zu viele Argumente für --block-list"
+msgstr "%s: Te veel argumenten bij --block-list"
 
 #: src/xz/args.c
 #, c-format
 msgid "In --block-list, block size is missing after filter chain number '%c:'"
-msgstr "In --block-list fehlt die Blockgröße nach der Filterkettennummer »%c:«"
+msgstr "Bij '--block-list' ontbreekt blokgrootte na filterketennummer '%c':"
 
 #: src/xz/args.c
 msgid "0 can only be used as the last element in --block-list"
-msgstr "0 kann nur das letzte Element in --block-list sein"
+msgstr "Bij '--block-list' kan '0' alleen het laatste element zijn"
 
 #: src/xz/args.c
 #, c-format
 msgid "%s: Unknown file format type"
-msgstr "%s: Unbekanntes Dateiformat"
+msgstr "%s: Onbekend soort bestandsindeling"
 
 #: src/xz/args.c
 #, c-format
 msgid "%s: Unsupported integrity check type"
-msgstr "%s: Integritätsprüfungstyp nicht unterstützt"
+msgstr "%s: Niet-ondersteund soort integriteitscontrole"
 
 #: src/xz/args.c
 msgid "Only one file can be specified with '--files' or '--files0'."
-msgstr "Nur eine Datei kann als Argument für »--files« oder »--files0« angegeben werden."
+msgstr "Slechts één bestand kan opgegeven worden met '--files' of '--files0'."
 
 #. TRANSLATORS: This is a translatable
 #. string because French needs a space
@@ -66,129 +66,129 @@ msgstr "%s: %s"
 #: src/xz/args.c
 #, c-format
 msgid "The environment variable %s contains too many arguments"
-msgstr "Die Umgebungsvariable %s enthält zu viele Argumente"
+msgstr "Omgevingsvariabele '%s' bevat te veel argumenten"
 
 #: src/xz/args.c
 msgid "Compression support was disabled at build time"
-msgstr "Die Unterstützung für Kompression wurde zum Zeitpunkt der Erstellung deaktiviert"
+msgstr "Compressie werd uitgeschakeld tijdens compilatie"
 
 #: src/xz/args.c
 msgid "Decompression support was disabled at build time"
-msgstr "Die Unterstützung für Dekompression wurde zum Zeitpunkt der Erstellung deaktiviert"
+msgstr "Decompressie werd uitgeschakeld tijdens compilatie"
 
 #: src/xz/args.c
 msgid "Compression of lzip files (.lz) is not supported"
-msgstr "Kompression von lzip-Dateien (.lz) wird nicht unterstützt"
+msgstr "Compressie van LZIP-bestanden (.lz) wordt niet ondersteund"
 
 #: src/xz/args.c
 msgid "--block-list is ignored unless compressing to the .xz format"
-msgstr "--block-list wird ignoriert, außer wenn in das .xz-Format komprimiert wird"
+msgstr "'--block-list' wordt genegeerd (alleen geldig bij comprimeren naar .xz-indeling)"
 
 #: src/xz/args.c
 msgid "With --format=raw, --suffix=.SUF is required unless writing to stdout"
-msgstr "Mit --format=raw ist --suffix=.SUF notwendig, falls nicht in die Standardausgabe geschrieben wird"
+msgstr "Met '--format=raw' is optie '--suffix=.EXT' vereist (tenzij naar standaarduitvoer geschreven wordt)"
 
 #: src/xz/coder.c
 msgid "Maximum number of filters is four"
-msgstr "Maximal vier Filter möglich"
+msgstr "Het maximum aantal filters is vier"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Error in --filters%s=FILTERS option:"
-msgstr "Fehler in der Option --filters%s=FILTER:"
+msgstr "Fout in optie '--filters%s=FILTERS':"
 
 #: src/xz/coder.c
 msgid "Memory usage limit is too low for the given filter setup."
-msgstr "Die Speicherbedarfsbegrenzung ist für die gegebene Filter-Konfiguration zu niedrig."
+msgstr "Geheugengebruiksgrens is te laag voor de gegeven filterconfiguratie."
 
 #: src/xz/coder.c
 #, c-format
 msgid "filter chain %u used by --block-list but not specified with --filters%u="
-msgstr "Filterkette %u wird von --block-list verwendet, wurde aber nicht mit --filters%u= angegeben"
+msgstr "filterketen %u is gebruikt bij '--block-list' maar niet gegeven met '--filters%u='"
 
 #: src/xz/coder.c
 msgid "Using a preset in raw mode is discouraged."
-msgstr "Verwendung einer Voreinstellung im Roh-Modus wird nicht empfohlen."
+msgstr "Gebruik van een voorinstelling in rauwe modus wordt ontraden."
 
 #: src/xz/coder.c
 msgid "The exact options of the presets may vary between software versions."
-msgstr "Die genauen Optionen der Voreinstellung können zwischen Softwareversionen variieren."
+msgstr "De precieze opties van de voorinstellingen kunnen variëren tussen programmaversies."
 
 #: src/xz/coder.c
 msgid "The .lzma format supports only the LZMA1 filter"
-msgstr "Das .lzma-Format unterstützt nur den LZMA1-Filter"
+msgstr "De .lzma-indeling ondersteunt alleen het LZMA1-filter"
 
 #: src/xz/coder.c
 msgid "LZMA1 cannot be used with the .xz format"
-msgstr "LZMA1 kann nicht mit dem .xz-Format verwendet werden"
+msgstr "LZMA1 kan niet gebruikt worden met de .xz-indeling"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Filter chain %u is incompatible with --flush-timeout"
-msgstr "Die Filterkette %u ist inkompatibel zu --flush-timeout"
+msgstr "Filterketen %u is niet compatibel met '--flush-timeout'"
 
 #: src/xz/coder.c
 msgid "Switching to single-threaded mode due to --flush-timeout"
-msgstr "Wegen --flush-timeout wird auf den Einzelthread-Modus umgeschaltet"
+msgstr "Overgeschakeld naar enkeldraads modus wegens '--flush-timeout'"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Unsupported options in filter chain %u"
-msgstr "Nicht unterstützte Optionen in Filterkette %u"
+msgstr "Niet-ondersteunde opties in filterketen %u"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Using up to %<PRIu32> threads."
-msgstr "Bis zu %<PRIu32> Threads werden benutzt."
+msgstr "Tot %<PRIu32> threads worden gebruikt."
 
 #: src/xz/coder.c
 msgid "Unsupported filter chain or filter options"
-msgstr "Filterkette oder Filteroptionen werden nicht unterstützt"
+msgstr "Niet-ondersteunde filterketen of filteropties"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Decompression will need %s MiB of memory."
-msgstr "Dekompression wird %s MiB Speicher brauchen."
+msgstr "Decompressie heeft %s MiB aan geheugen nodig."
 
 #: src/xz/coder.c
 #, c-format
 msgid "Reduced the number of threads from %s to %s to not exceed the memory usage limit of %s MiB"
-msgstr "Anzahl der Threads wurde von %s auf %s reduziert, um die Speicherbedarfsbegrenzung von %s MiB nicht zu übersteigen"
+msgstr "Aantal threads is gereduceerd van %s naar %s om de geheugengebruiksgrens van %s MiB niet te overschrijden"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Reduced the number of threads from %s to one. The automatic memory usage limit of %s MiB is still being exceeded. %s MiB of memory is required. Continuing anyway."
-msgstr "Anzahl der Threads wurde von %s auf einen reduziert. Die automatische Begrenzung des Speicherverbrauchs auf %s MiB wird immer noch überschritten. %s MiB an Speicher sind erforderlich. Es wird dennoch fortgesetzt."
+msgstr "Het aantal threads is gereduceerd van %s naar 1, maar de automatische geheugengebruiksgrens van %s MiB wordt alsnog overschreden.  %s MiB aan geheugen is nodig.  Toch doorgegaan."
 
 #: src/xz/coder.c
 #, c-format
 msgid "Switching to single-threaded mode to not exceed the memory usage limit of %s MiB"
-msgstr "Es wurde in den Einzelthread-Modus gewechselt, um die Speicherbedarfsbegrenzung von %s MiB nicht zu übersteigen"
+msgstr "Overgeschakeld naar enkeldraads modus, om de geheugengebruiksgrens van %s MiB niet te overschrijden"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Adjusted LZMA%c dictionary size from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
-msgstr "Die LZMA%c-Wörterbuchgröße wurde von %s MiB auf %s MiB angepasst, um die Speicherbedarfsbegrenzung von %s MiB nicht zu übersteigen"
+msgstr "Grootte van LZMA%c-woordenboek is aangepast van %s MiB naar %s MiB om de geheugengebruiksgrens van %s MiB niet te overschrijden"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Adjusted LZMA%c dictionary size for --filters%u from %s MiB to %s MiB to not exceed the memory usage limit of %s MiB"
-msgstr "Die LZMA%c-Wörterbuchgröße für --filters%u wurde von %s MiB auf %s MiB angepasst, um die Speicherbedarfsbegrenzung von %s MiB nicht zu übersteigen"
+msgstr "Grootte van LZMA%c-woordenboek voor '--filters%u' is aangepast van %s MiB naar %s MiB om de geheugengebruiksgrens van %s MiB niet te overschrijden"
 
 #: src/xz/coder.c
 #, c-format
 msgid "Error changing to filter chain %u: %s"
-msgstr "Fehler beim Wechsel zur Filterkette %u: %s"
+msgstr "Fout bij overgaan naar filterketen %u: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "Error creating a pipe: %s"
-msgstr "Fehler beim Erzeugen der Pipeline: %s"
+msgstr "Fout bij aanmaken van pijp: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: poll() failed: %s"
-msgstr "%s: poll() ist fehlgeschlagen: %s"
+msgstr "%s: poll() is mislukt: %s"
 
 #. TRANSLATORS: When compression or decompression finishes,
 #. and xz is going to remove the source file, xz first checks
@@ -203,271 +203,271 @@ msgstr "%s: poll() ist fehlgeschlagen: %s"
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: File seems to have been moved, not removing"
-msgstr "%s: Datei scheint verschoben worden zu sein, daher wird sie nicht gelöscht"
+msgstr "Bestand '%s' schijnt verplaatst te zijn -- niet verwijderd"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Cannot remove: %s"
-msgstr "%s: Löschen nicht möglich: %s"
+msgstr "Kan '%s' niet verwijderen: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Cannot set the file owner: %s"
-msgstr "%s: Dateieigentümer kann nicht gesetzt werden: %s"
+msgstr "%s: Kan bestandseigenaar niet instellen: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Cannot set the file group: %s"
-msgstr "%s: Dateigruppe kann nicht gesetzt werden: %s"
+msgstr "%s: Kan bestandsgroep niet instellen: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Cannot set the file permissions: %s"
-msgstr "%s: Zugriffsrechte können nicht gesetzt werden: %s"
+msgstr "%s: Kan de toegangsrechten niet instellen: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Synchronizing the file failed: %s"
-msgstr "%s: Fehler beim Synchronisieren der Datei: %s"
+msgstr "%s: Synchroniseren van bestand is mislukt: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Synchronizing the directory of the file failed: %s"
-msgstr "%s: Fehler beim Synchronisieren des Verzeichnisses der Datei: %s"
+msgstr "%s: Synchroniseren van bestandsmap is mislukt: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "Error getting the file status flags from standard input: %s"
-msgstr "Dateistatus-Markierungen können nicht aus der Standardeingabe ermittelt werden: %s"
+msgstr "Fout bij verkrijgen van de bestandstoestandsvlaggen van standaardinvoer: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Is a symbolic link, skipping"
-msgstr "%s: Ist ein symbolischer Link, wird übersprungen"
+msgstr "%s: Is een symbolische koppeling -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Is a directory, skipping"
-msgstr "%s: Ist ein Verzeichnis, wird übersprungen"
+msgstr "%s: Is een map -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Not a regular file, skipping"
-msgstr "%s: Keine reguläre Datei, wird übersprungen"
+msgstr "%s: Is geen gewoon bestand -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: File has setuid or setgid bit set, skipping"
-msgstr "%s: Datei hat das setuid- oder setgid-Bit gesetzt, wird übersprungen"
+msgstr "%s: Bestand heeft SETUID- of SETGID-bit gezet -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: File has sticky bit set, skipping"
-msgstr "%s: Datei hat sticky-Bit gesetzt, wird übersprungen"
+msgstr "%s: Bestand heeft 'sticky'-bit gezet -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Input file has more than one hard link, skipping"
-msgstr "%s: Eingabedatei hat mehr als einen harten Link, wird übersprungen"
+msgstr "%s: Invoerbestand heeft meer dan één harde koppeling -- overgeslagen"
 
 #: src/xz/file_io.c
 msgid "Empty filename, skipping"
-msgstr "Leerer Dateiname, wird übersprungen"
+msgstr "Lege bestandsnaam -- overgeslagen"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "Error restoring the status flags to standard input: %s"
-msgstr "Fehler beim Wiederherstellen der Status-Markierungen für die Standardeingabe: %s"
+msgstr "Fout bij herstellen van de bestandstoestandsvlaggen naar standaardinvoer: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "Error getting the file status flags from standard output: %s"
-msgstr "Status-Markierungen der Standardausgabe können nicht ermittelt werden: %s"
+msgstr "Fout bij verkrijgen van de bestandstoestandsvlaggen van standaarduitvoer: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Opening the directory failed: %s"
-msgstr "%s: Fehler beim Öffnen des Verzeichnisses: %s"
+msgstr "%s: Openen van map is mislukt: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Destination is not a regular file"
-msgstr "%s: Ziel ist keine reguläre Datei"
+msgstr "%s: Doel is geen gewoon bestand"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "Error restoring the O_APPEND flag to standard output: %s"
-msgstr "Fehler beim Wiederherstellen der O_APPEND-Markierungen für die Standardausgabe: %s"
+msgstr "Fout bij herstellen van de 'O_APPEND'-vlag naar standaardinvoer: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Closing the file failed: %s"
-msgstr "%s: Fehler beim Schließen der Datei: %s"
+msgstr "%s: Sluiten van bestand is mislukt: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Seeking failed when trying to create a sparse file: %s"
-msgstr "%s: Positionierungsfehler beim Versuch, eine Sparse-Datei (dünnbesetzte Datei) zu erzeugen: %s"
+msgstr "%s: 'Seeken' is mislukt bij aanmaken van een bestand met gaten: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Read error: %s"
-msgstr "%s: Lesefehler: %s"
+msgstr "%s: Leesfout: %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Error seeking the file: %s"
-msgstr "%s: Fehler beim Durchsuchen der Datei: %s"
+msgstr "%s: Fout bij 'seeken': %s"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Unexpected end of file"
-msgstr "%s: Unerwartetes Ende der Datei"
+msgstr "%s: Onverwacht einde van bestand"
 
 #: src/xz/file_io.c
 #, c-format
 msgid "%s: Write error: %s"
-msgstr "%s: Schreibfehler: %s"
+msgstr "%s: Schrijffout: %s"
 
 #: src/xz/hardware.c
 msgid "Disabled"
-msgstr "Deaktiviert"
+msgstr "Uitgeschakeld"
 
 #: src/xz/hardware.c
 msgid "Amount of physical memory (RAM):"
-msgstr "Gesamtmenge physischer Speicher (RAM):"
+msgstr "Hoeveelheid fysiek geheugen (RAM):"
 
 #: src/xz/hardware.c
 msgid "Number of processor threads:"
-msgstr "Anzahl der Prozessor-Threads:"
+msgstr "Aantal processor-threads:"
 
 #: src/xz/hardware.c
 msgid "Compression:"
-msgstr "Kompression:"
+msgstr "Compressie:"
 
 #: src/xz/hardware.c
 msgid "Decompression:"
-msgstr "Dekompression:"
+msgstr "Decompressie:"
 
 #: src/xz/hardware.c
 msgid "Multi-threaded decompression:"
-msgstr "Multithread-Dekompression:"
+msgstr "Multi-threaded decompressie:"
 
 #: src/xz/hardware.c
 msgid "Default for -T0:"
-msgstr "Vorgabe für -T0:"
+msgstr "Default voor -T0:"
 
 #: src/xz/hardware.c
 msgid "Hardware information:"
-msgstr "Hardware-Information:"
+msgstr "Hardware-informatie:"
 
 #: src/xz/hardware.c
 msgid "Memory usage limits:"
-msgstr "Speicherbedarfsbegrenzung:"
+msgstr "Geheugengebruiksgrenzen:"
 
 #: src/xz/list.c
 msgid "Streams:"
-msgstr "Datenströme:"
+msgstr "Streams:"
 
 #: src/xz/list.c
 msgid "Blocks:"
-msgstr "Blöcke:"
+msgstr "Blokken:"
 
 #: src/xz/list.c
 msgid "Compressed size:"
-msgstr "Größe komprimiert:"
+msgstr "Gecomprimeerde grootte:"
 
 #: src/xz/list.c
 msgid "Uncompressed size:"
-msgstr "Größe unkomprimiert:"
+msgstr "Ongecomprimeerde grootte:"
 
 #: src/xz/list.c
 msgid "Ratio:"
-msgstr "Verhältnis:"
+msgstr "Ratio:"
 
 #: src/xz/list.c
 msgid "Check:"
-msgstr "Prüfung:"
+msgstr "Controle:"
 
 #: src/xz/list.c
 msgid "Stream Padding:"
-msgstr "Datenstromauffüllung:"
+msgstr "Stream-opvulling:"
 
 #: src/xz/list.c
 msgid "Memory needed:"
-msgstr "Benötigter Speicher:"
+msgstr "Benodigd geheugen:"
 
 #: src/xz/list.c
 msgid "Sizes in headers:"
-msgstr "Größe in Köpfen:"
+msgstr "Groottes in koppen:"
 
 #: src/xz/list.c
 msgid "Number of files:"
-msgstr "Anzahl Dateien:"
+msgstr "Aantal bestanden:"
 
 #: src/xz/list.c
 msgid "Stream"
-msgstr "Datenstrom"
+msgstr "Stream"
 
 #: src/xz/list.c
 msgid "Block"
-msgstr "Block"
+msgstr "Blok"
 
 #: src/xz/list.c
 msgid "Blocks"
-msgstr "Blöcke"
+msgstr "Blokken"
 
 #: src/xz/list.c
 msgid "CompOffset"
-msgstr "KompVers"
+msgstr "Gecomp.Start"
 
 #: src/xz/list.c
 msgid "UncompOffset"
-msgstr "UnkompVers"
+msgstr "Ongecomp.Start"
 
 #: src/xz/list.c
 msgid "CompSize"
-msgstr "KompGröße"
+msgstr "Gecomp.Grootte"
 
 #: src/xz/list.c
 msgid "UncompSize"
-msgstr "UnkompGröße"
+msgstr "Ongecomp.Grootte"
 
 #: src/xz/list.c
 msgid "TotalSize"
-msgstr "Gesamt"
+msgstr "TotaleGrootte"
 
 #: src/xz/list.c
 msgid "Ratio"
-msgstr "Verhältnis"
+msgstr "Ratio"
 
 #: src/xz/list.c
 msgid "Check"
-msgstr "Prüfung"
+msgstr "Controle"
 
 #: src/xz/list.c
 msgid "CheckVal"
-msgstr "Prüfwert"
+msgstr "Cont.waarde"
 
 #: src/xz/list.c
 msgid "Padding"
-msgstr "Auffüllung"
+msgstr "Vulling"
 
 #: src/xz/list.c
 msgid "Header"
-msgstr "Kopf"
+msgstr "Kop"
 
 #: src/xz/list.c
 msgid "Flags"
-msgstr "Flags"
+msgstr "Vlaggen"
 
 #: src/xz/list.c
 msgid "MemUsage"
-msgstr "SpeichVerb"
+msgstr "Geh.geb."
 
 #: src/xz/list.c
 msgid "Filters"
-msgstr "Filter"
+msgstr "Filters"
 
 #. TRANSLATORS: Indicates that there is no integrity check.
 #. This string is used in tables. In older xz version this
@@ -475,7 +475,7 @@ msgstr "Filter"
 #. nowadays there is no strict length restriction anymore.
 #: src/xz/list.c
 msgid "None"
-msgstr "Keine"
+msgstr "Geen"
 
 #. TRANSLATORS: Indicates that integrity check name is not known,
 #. but the Check ID is known (here 2). In older xz version these
@@ -483,61 +483,61 @@ msgstr "Keine"
 #. nowadays there is no strict length restriction anymore.
 #: src/xz/list.c
 msgid "Unknown-2"
-msgstr "Unbek.2"
+msgstr "Onbekend-2"
 
 #: src/xz/list.c
 msgid "Unknown-3"
-msgstr "Unbek.3"
+msgstr "Onbekend-3"
 
 #: src/xz/list.c
 msgid "Unknown-5"
-msgstr "Unbek.5"
+msgstr "Onbekend-5"
 
 #: src/xz/list.c
 msgid "Unknown-6"
-msgstr "Unbek.6"
+msgstr "Onbekend-6"
 
 #: src/xz/list.c
 msgid "Unknown-7"
-msgstr "Unbek.7"
+msgstr "Onbekend-8"
 
 #: src/xz/list.c
 msgid "Unknown-8"
-msgstr "Unbek.8"
+msgstr "Onbekend-9"
 
 #: src/xz/list.c
 msgid "Unknown-9"
-msgstr "Unbek.9"
+msgstr "Onbekend-10"
 
 #: src/xz/list.c
 msgid "Unknown-11"
-msgstr "Unbek.11"
+msgstr "Onbekend-11"
 
 #: src/xz/list.c
 msgid "Unknown-12"
-msgstr "Unbek.12"
+msgstr "Onbekend-12"
 
 #: src/xz/list.c
 msgid "Unknown-13"
-msgstr "Unbek.13"
+msgstr "Onbekend-13"
 
 #: src/xz/list.c
 msgid "Unknown-14"
-msgstr "Unbek.14"
+msgstr "Onbekend-14"
 
 #: src/xz/list.c
 msgid "Unknown-15"
-msgstr "Unbek.15"
+msgstr "Onbekend-15"
 
 #: src/xz/list.c
 #, c-format
 msgid "%s: File is empty"
-msgstr "%s: Datei ist leer"
+msgstr "%s: Bestand is leeg"
 
 #: src/xz/list.c
 #, c-format
 msgid "%s: Too small to be a valid .xz file"
-msgstr "%s: Zu klein, um eine gültige .xz-Datei zu sein"
+msgstr "%s: Te klein om een geldig .xz-bestand te zijn"
 
 #. TRANSLATORS: These are column headings. From Strms (Streams)
 #. to Ratio, the columns are right aligned. Check and Filename
@@ -545,7 +545,7 @@ msgstr "%s: Zu klein, um eine gültige .xz-Datei zu sein"
 #. use two lines here. Test with "xz -l foo.xz".
 #: src/xz/list.c
 msgid "Strms  Blocks   Compressed Uncompressed  Ratio  Check   Filename"
-msgstr " Str.  Blöcke       Kompr.     Unkompr.  Verh.  Check   Dateiname"
+msgstr "Strms  Blokkn   Gecomprim. Ongecomprim.  Ratio  Contrle Bestandsnaam"
 
 #: src/xz/list.c
 msgid "Yes"
@@ -553,11 +553,11 @@ msgstr "Ja"
 
 #: src/xz/list.c
 msgid "No"
-msgstr "Nein"
+msgstr "Nee"
 
 #: src/xz/list.c
 msgid "Minimum XZ Utils version:"
-msgstr "Minimal erforderliche XZ Utils-Version:"
+msgstr "Minimale XZ-Utils-versie:"
 
 #. TRANSLATORS: %s is an integer. Only the plural form of this
 #. message is used (e.g. "2 files"). Test with "xz -l foo.xz bar.xz".
@@ -565,47 +565,47 @@ msgstr "Minimal erforderliche XZ Utils-Version:"
 #, c-format
 msgid "%s file\n"
 msgid_plural "%s files\n"
-msgstr[0] "%s Datei\n"
-msgstr[1] "%s Dateien\n"
+msgstr[0] "%s bestand\n"
+msgstr[1] "%s bestanden\n"
 
 #: src/xz/list.c
 msgid "Totals:"
-msgstr "Gesamt:"
+msgstr "Totalen:"
 
 #: src/xz/list.c
 msgid "--list works only on .xz files (--format=xz or --format=auto)"
-msgstr "--list funktioniert nur mit .xz-Dateien (--format=xz oder --format=auto)"
+msgstr "'--list' werkt alleen voor .xz-bestanden (--format=xz of --format=auto)"
 
 #: src/xz/list.c
 msgid "Try 'lzmainfo' with .lzma files."
-msgstr "Versuchen Sie »lzmainfo« mit .lzma-Dateien."
+msgstr "Probeer 'lzmainfo' met .lzma-bestanden."
 
 #: src/xz/list.c
 msgid "--list does not support reading from standard input"
-msgstr "--list unterstützt kein Lesen aus der Standardeingabe"
+msgstr "'--list' is niet mogelijk bij lezen van standaardinvoer"
 
 #: src/xz/main.c
 #, c-format
 msgid "%s: Error reading filenames: %s"
-msgstr "%s: Fehler beim Lesen der Dateinamen: %s"
+msgstr "%s: Fout bij lezen van bestandsnamen: %s"
 
 #: src/xz/main.c
 #, c-format
 msgid "%s: Unexpected end of input when reading filenames"
-msgstr "%s: Unerwartetes Ende der Eingabe beim Lesen der Dateinamen"
+msgstr "%s: Onverwacht einde van invoer tijdens lezen van bestandsnamen"
 
 #: src/xz/main.c
 #, c-format
 msgid "%s: Null character found when reading filenames; maybe you meant to use '--files0' instead of '--files'?"
-msgstr "%s: Null-Zeichen beim Lesen der Dateinamen gefunden; meinten Sie »--files0« statt »--files«?"
+msgstr "%s: NUL-teken gevonden bij lezen van bestandsnamen; misschien bedoelde u '--files0' i.p.v. '--files'?"
 
 #: src/xz/main.c
 msgid "Compression and decompression with --robot are not supported yet."
-msgstr "Kompression und Dekompression mit --robot wird noch nicht unterstützt."
+msgstr "Compressie en decompressie met '--robot' worden nog niet ondersteund."
 
 #: src/xz/main.c
 msgid "Cannot read data from standard input when reading filenames from standard input"
-msgstr "Lesen der Daten aus der Standardeingabe ist nicht möglich, wenn die Dateinamen auch aus der Standardeingabe gelesen werden"
+msgstr "Kan geen gegevens van standaardinvoer lezen wanneer bestandsnamen daarvan gelezen worden"
 
 #. TRANSLATORS: This is the program name in the beginning
 #. of the line in messages. Usually it becomes "xz: ".
@@ -618,280 +618,280 @@ msgstr "%s: "
 
 #: src/xz/message.c src/lzmainfo/lzmainfo.c
 msgid "Internal error (bug)"
-msgstr "Interner Fehler (Bug)"
+msgstr "** Interne fout (bug) **"
 
 #: src/xz/message.c
 msgid "Cannot establish signal handlers"
-msgstr "Signalroutine kann nicht gesetzt werden"
+msgstr "Kan signaalverwerkers niet instellen"
 
 #: src/xz/message.c
 msgid "No integrity check; not verifying file integrity"
-msgstr "Keine Integritätsprüfung; Integrität der Datei wird nicht überprüft"
+msgstr "Geen integriteitscontrole -- bestandsintegriteit wordt niet gecontroleerd"
 
 #: src/xz/message.c
 msgid "Unsupported type of integrity check; not verifying file integrity"
-msgstr "Typ der Integritätsprüfung wird nicht unterstützt; Integrität der Datei wird nicht überprüft"
+msgstr "Niet-ondersteunde integriteitscontrole -- bestandsintegriteit wordt niet gecontroleerd"
 
 #: src/xz/message.c
 msgid "Memory usage limit reached"
-msgstr "Speicherbedarfsbegrenzung erreicht"
+msgstr "Geheugengebruiksgrens is bereikt"
 
 #: src/xz/message.c
 msgid "File format not recognized"
-msgstr "Dateiformat nicht erkannt"
+msgstr "Bestandsindeling niet herkend"
 
 #: src/xz/message.c
 msgid "Unsupported options"
-msgstr "Optionen nicht unterstützt"
+msgstr "Niet-ondersteunde opties"
 
 #: src/xz/message.c
 msgid "Compressed data is corrupt"
-msgstr "Komprimierte Daten sind beschädigt"
+msgstr "Gecomprimeerde gegevens zijn beschadigd"
 
 #: src/xz/message.c
 msgid "Unexpected end of input"
-msgstr "Unerwartetes Ende der Eingabe"
+msgstr "Onverwacht einde van invoer"
 
 #: src/xz/message.c
 #, c-format
 msgid "%s MiB of memory is required. The limiter is disabled."
-msgstr "%s MiB Speicher wird benötigt. Die Begrenzung ist deaktiviert."
+msgstr "%s MiB aan geheugen is nodig.  De begrenzer is uitgeschakeld."
 
 #: src/xz/message.c
 #, c-format
 msgid "%s MiB of memory is required. The limit is %s."
-msgstr "%s MiB Speicher wird benötigt. Die Begrenzung ist %s."
+msgstr "%s MiB aan geheugen is nodig.  De grens is %s."
 
 #: src/xz/message.c
 #, c-format
 msgid "%s: Filter chain: %s\n"
-msgstr "%s: Filterkette: %s\n"
+msgstr "%s: Filterketen: %s\n"
 
 #: src/xz/message.c
 #, c-format
 msgid "Try '%s --help' for more information."
-msgstr "Versuchen Sie »%s --help« für mehr Informationen."
+msgstr "Typ '%s --help' voor meer informatie."
 
 #: src/xz/message.c src/lzmainfo/lzmainfo.c
 #, c-format
 msgid "Error printing the help text (error code %d)"
-msgstr "Fehler bei der Ausgabe des Hilfetextes (Fehlercode %d)"
+msgstr "Fout bij tonen van hulptekst (foutcode %d)"
 
 #: src/xz/message.c
 #, c-format
 msgid "Usage: %s [OPTION]... [FILE]...\n"
-msgstr "Aufruf: %s [OPTION] … [DATEI] …\n"
+msgstr "Gebruikt:  %s [OPTIE...] [BESTAND...]\n"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Compress or decompress FILEs in the .xz format."
-msgstr "Komprimiert oder dekomprimiert .xz-DATEI(EN)."
+msgstr "Comprimeert of decomprimeert BESTANDen in de .xz-indeling."
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Mandatory arguments to long options are mandatory for short options too."
-msgstr ""
-"Obligatorische Argumente für lange Optionen sind auch für kurze Optionen\n"
-"zwingend."
+msgstr "(Een verplicht argument bij een lange optie geldt ook voor de korte vorm.)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Operation mode:"
-msgstr "Aktionsmodus:"
+msgstr " Werkingsmodus:"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "force compression"
-msgstr "Kompression erzwingen"
+msgstr "comprimeren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "force decompression"
-msgstr "Dekompression erzwingen"
+msgstr "decomprimeren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "test compressed file integrity"
-msgstr "Integrität der komprimierten Datei überprüfen"
+msgstr "integriteit van gecomprimeerd bestand controleren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "list information about .xz files"
-msgstr "Informationen zu .xz-Dateien auflisten"
+msgstr "informatie tonen over .xz-bestanden"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Operation modifiers:"
-msgstr "Aktionsmodifikatoren:"
+msgstr "Werkingsaanpassers:"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "keep (don't delete) input files"
-msgstr "Eingabedateien beibehalten (nicht löschen)"
+msgstr "invoerbestanden behouden (niet verwijderen)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "force overwrite of output file and (de)compress links"
-msgstr "Überschreiben der Ausgabedatei erzwingen und Links (de)komprimieren"
+msgstr "uitvoerbestand overschrijven, koppelingen (de)comprimeren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "write to standard output and don't delete input files"
-msgstr "In die Standardausgabe schreiben und die Eingabedateien nicht löschen"
+msgstr "naar standaarduitvoer schrijven, invoerbestanden behouden"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "don't synchronize the output file to the storage device before removing the input file"
-msgstr "Ausgabedatei nicht auf dem Speichergerät synchronisieren, bevor die Eingabedatei gelöscht wird"
+msgstr "het uitvoerbestand niet met het opslagmedium synchroniseren alvorens het invoerbestand te verwijderen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "decompress only the first stream, and silently ignore possible remaining input data"
-msgstr "Nur den ersten Datenstrom dekomprimieren und stillschweigend mögliche weitere Eingabedaten ignorieren"
+msgstr "alleen de eerste stream decomprimeren, en stilzwijgend eventuele overige invoergegevens negeren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "do not create sparse files when decompressing"
-msgstr "Beim Dekomprimieren keine Sparse-Dateien erzeugen"
+msgstr "geen bestanden met gaten aanmaken bij het decomprimeren"
 
 #: src/xz/message.c
 msgid ".SUF"
-msgstr ".END"
+msgstr ".EXT"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "use the suffix '.SUF' on compressed files"
-msgstr "».END« als Endung für komprimierte Dateien benutzen"
+msgstr "deze extensie gebruiken voor gecomprimeerde bestanden"
 
 #: src/xz/message.c
 msgid "FILE"
-msgstr "DATEI"
+msgstr "BESTAND"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "read filenames to process from FILE; if FILE is omitted, filenames are read from the standard input; filenames must be terminated with the newline character"
-msgstr "Zu verarbeitende Dateinamen aus DATEI lesen; falls keine DATEI angegeben wurde, werden Dateinamen aus der Standardeingabe gelesen. Dateinamen müssen durch einen Zeilenumbruch voneinander getrennt werden"
+msgstr "namen van te verwerken bestanden uit dit BESTAND halen; als BESTAND weggelaten wordt, dan worden de namen van standaardinvoer gelezen; elke naam moet afgesloten worden met een nieuweregelteken"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "like --files but use the null character as terminator"
-msgstr "Wie --files, aber das Null-Zeichen wird als Trenner benutzt"
+msgstr "zoals '--files' maar met het NUL-teken als naamsafsluiting"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Basic file format and compression options:"
-msgstr "Grundlegende Optionen für Dateiformat und Kompression:"
+msgstr "Bestandsindeling- en compressie-opties:"
 
 #: src/xz/message.c
 msgid "FORMAT"
-msgstr "FORMAT"
+msgstr "INDELING"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "file format to encode or decode; possible values are 'auto' (default), 'xz', 'lzma', 'lzip', and 'raw'"
-msgstr "Dateiformat zur Kodierung oder Dekodierung; mögliche Werte sind »auto« (Voreinstellung), »xz«, »lzma«, »lzip« und »raw«"
+msgstr "te coderen of decoderen bestandsindeling; mogelijke waarden zijn 'auto' (standaard), 'xz', 'lzma', 'lzip', en 'raw'"
 
 #: src/xz/message.c
 msgid "NAME"
-msgstr "NAME"
+msgstr "NAAM"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "integrity check type: 'none' (use with caution), 'crc32', 'crc64' (default), or 'sha256'"
-msgstr "Typ der Integritätsprüfung: »none« (Vorsicht!), »crc32«, »crc64« (Voreinstellung) oder »sha256«"
+msgstr "soort integriteitscontrole: 'none' (ontraden), 'crc32', 'crc64' (standaard), of 'sha256'"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "don't verify the integrity check when decompressing"
-msgstr "Integritätsprüfung beim Dekomprimieren nicht ausführen"
+msgstr "geen integriteitscontrole doen tijdens decomprimeren"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "compression preset; default is 6; take compressor *and* decompressor memory usage into account before using 7-9!"
-msgstr "Kompressionseinstellung; Voreinstellung ist 6. Beachten Sie den Speicherbedarf des Kompressors *und* des Dekompressors, wenn Sie 7-9 benutzen!"
+msgstr "compressiegraad (standaard is 6); denk aan geheugengebruik van compressor *en* decompressor alvorens 7-9 te gebruiken"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "try to improve compression ratio by using more CPU time; does not affect decompressor memory requirements"
-msgstr "Versuchen, durch stärkere CPU-Auslastung das Kompressionsverhältnis zu verbessern. Dies beeinflusst nicht den Speicherbedarf des Dekompressors."
+msgstr "compressieratio verbeteren met meer processortijd; heeft geen invloed op het geheugengebruik bij decompressie"
 
 #. TRANSLATORS: Short for NUMBER. A longer string is fine but
 #. wider than 5 columns makes --long-help a few lines longer.
 #: src/xz/message.c
 msgid "NUM"
-msgstr "ANZAHL"
+msgstr "GETAL"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "use at most NUM threads; the default is 0 which uses as many threads as there are processor cores"
-msgstr "Höchstens die angegebene ANZAHL Threads erzeugen; die Voreinstellung ist 0, wobei so viele Threads erzeugt werden, wie Prozessorkerne vorhanden sind"
+msgstr ""
+"maximaal dit aantal threads gebruiken; standaard is 0,\n"
+"wat zoveel threads als er processorkernen zijn betekent"
 
 #: src/xz/message.c
 msgid "SIZE"
-msgstr "GRÖẞE"
+msgstr "GROOTTE"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "start a new .xz block after every SIZE bytes of input; use this to set the block size for threaded compression"
-msgstr "Einen neuen .xz-Block nach der angegebenen GRÖẞE der Eingabe in Bytes beginnen; benutzen Sie diese Option, um die Blockgröße für die Kompression mit mehreren Threads zu setzen"
+msgstr "een nieuw .xz-blok beginnen na steeds dit aantal invoerbytes; gebruik dit om de blokgrootte voor threaded compressie in te stellen"
 
 #: src/xz/message.c
 msgid "BLOCKS"
-msgstr "BLÖCKE"
+msgstr "BLOKKEN"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "start a new .xz block after the given comma-separated intervals of uncompressed data; optionally, specify a filter chain number (0-9) followed by a ':' before the uncompressed data size"
-msgstr "Einen neuen .xz-Block gemäß der angegebenen, durch Kommata getrennten Intervalle an unkomprimierten Daten beginnen; optional kann eine Filterkettennummer (0-9) angegeben werden, gefolgt von einem »:« und der unkomprimierten Datengröße"
+msgstr "een nieuw .xz-blok beginnen na deze komma-gescheiden groottes van ongecomprimeerde gegevens; geef eventueel het filterketennummer op (0-9) gevolgd door ':' vóór een gegeven grootte"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "when compressing, if more than NUM milliseconds has passed since the previous flush and reading more input would block, all pending data is flushed out"
-msgstr "Wenn beim Komprimieren mehr als die angegebene ANZAHL an Millisekunden seit der letzten Leerungsaktion vergangen ist und das Lesen von zusätzlichen Eingabedaten den Prozess blockieren würde, dann werden alle noch ausstehenden Daten geschrieben"
+msgstr "als tijdens compressie meer dan dit aantal milliseconden voorbijgegaan is sinds de vorige doorspoeling, en het lezen van meer gegevens zou blokkeren, dan alle wachtende gegevens doorspoelen"
 
 #: src/xz/message.c
 msgid "LIMIT"
-msgstr "BEGRENZUNG"
+msgstr "GRENS"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 #, no-c-format
 msgid "set memory usage limit for compression, decompression, threaded decompression, or all of these; LIMIT is in bytes, % of RAM, or 0 for defaults"
-msgstr "Speicherbedarfsbegrenzung für Kompression, Dekompression oder beides setzen; die BEGRENZUNG wird in Bytes oder als Prozentsatz RAM angegeben. Geben Sie 0 an, um die Grundeinstellungen zu verwenden."
+msgstr "de geheugengebruiksgrens instellen voor compressie, decompressie, threaded decompressie, of allemaal; GRENS is in bytes, % van RAM, of 0 voor de standaardwaarden"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "if compression settings exceed the memory usage limit, give an error instead of adjusting the settings downwards"
-msgstr "Wenn die Kompressionseinstellungen die Speicherbedarfsbegrenzung übersteigen, wird ein Fehler ausgegeben, statt die Einstellungen nach unten anzupassen."
+msgstr "als compressie-instellingen de geheugengebruiksgrens overschrijden, een fout melden i.p.v. de instellingen te verlagen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Custom filter chain for compression (an alternative to using presets):"
-msgstr "Benutzerdefinierte Filterkette für Kompression (alternativ zur Verwendung von Voreinstellungen):"
+msgstr "Aangepaste filterketen voor compressie (een alternatief voor compressiegraden):"
 
 #: src/xz/message.c
 msgid "FILTERS"
-msgstr "FILTER"
+msgstr "FILTERS"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "set the filter chain using the liblzma filter string syntax; use --filters-help for more information"
-msgstr "Die Filterkette anhand der Liblzma-Filterkettensyntax setzen; mit --filters-help erhalten Sie weitere Informationen"
+msgstr "de filterketen instellen met de liblzma-filtersyntax; gebruik '--filters-help' voor meer informatie"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "set additional filter chains using the liblzma filter string syntax to use with --block-list"
-msgstr "Zusätzliche Filter anhand der Liblzma-Filterkettensyntax setzen, die mit --block-list verwendet werden sollen"
+msgstr "extra filterketens instellen met de liblzma-filtersyntax te gebruiken met '--block-list'"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display more information about the liblzma filter string syntax and exit"
-msgstr "Weitere Informationen über die Liblzma-Filterkettensyntax anzeigen und beenden."
+msgstr "meer informatie over de liblzma-filtersyntax tonen en stoppen"
 
 #. TRANSLATORS: Short for OPTIONS.
 #: src/xz/message.c
 msgid "OPTS"
-msgstr "OPTIONEN"
+msgstr "INSTEL"
 
 #. TRANSLATORS: Use semicolon (or its fullwidth form)
 #. in "(valid values; default)" even if it is weird in
@@ -901,24 +901,24 @@ msgstr "OPTIONEN"
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "LZMA1 or LZMA2; OPTS is a comma-separated list of zero or more of the following options (valid values; default):"
-msgstr "LZMA1 oder LZMA2; OPTIONEN ist eine durch Kommata getrennte Liste bestehend aus den folgenden Optionen (zulässige Werte; Voreinstellung):"
+msgstr "LZMA1 of LZMA2; INSTEL is een komma-gescheiden lijst van nul of meer van de volgende opties (geldige waarden; standaard):"
 
 #. TRANSLATORS: Short for PRESET. A longer string is
 #. fine but wider than 4 columns makes --long-help
 #. one line longer.
 #: src/xz/message.c
 msgid "PRE"
-msgstr "ZAHL"
+msgstr "GRAAD"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "reset options to a preset"
-msgstr "Optionen auf Voreinstellungsstufe zurücksetzen"
+msgstr "opties terugstellen op een voorinstelling"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "dictionary size"
-msgstr "Wörterbuchgröße"
+msgstr "woordenboekgrootte"
 
 #. TRANSLATORS: The word "literal" in "literal context
 #. bits" means how many "context bits" to use when
@@ -927,17 +927,17 @@ msgstr "Wörterbuchgröße"
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "number of literal context bits"
-msgstr "Anzahl der Literal-Kontext-Bits"
+msgstr "aantal contextbits per byte"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "number of literal position bits"
-msgstr "Anzahl der Literal-Positions-Bits"
+msgstr "aantal positiebits per byte"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "number of position bits"
-msgstr "Anzahl der Positions-Bits"
+msgstr "aantal positiebits"
 
 #: src/xz/message.c
 msgid "MODE"
@@ -946,142 +946,142 @@ msgstr "MODUS"
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "compression mode"
-msgstr "Kompressionsmodus"
+msgstr "compressiemodus"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "nice length of a match"
-msgstr "Nice-Länge eines Treffers"
+msgstr "mooie lengte van overeenkomst"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "match finder"
-msgstr "Algorithmus zum Auffinden von Übereinstimmungen"
+msgstr "overeenkomstzoeker"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "maximum search depth; 0=automatic (default)"
-msgstr "Maximale Suchtiefe; 0=automatisch (Voreinstellung)"
+msgstr "maximum zoekdiepte; 0=automatisch (standaard)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "x86 BCJ filter (32-bit and 64-bit)"
-msgstr "x86 BCJ-Filter (32-bit und 64-bit)"
+msgstr "x86 BCJ-filter (32-bit en 64-bit)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "ARM BCJ filter"
-msgstr "ARM-BCJ-Filter"
+msgstr "ARM BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "ARM-Thumb BCJ filter"
-msgstr "ARM-Thumb-BCJ-Filter"
+msgstr "ARM-Thumb BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "ARM64 BCJ filter"
-msgstr "ARM64-BCJ-Filter"
+msgstr "ARM64 BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "PowerPC BCJ filter (big endian only)"
-msgstr "PowerPC-BCJ-Filter (nur Big Endian)"
+msgstr "PowerPC BCJ-filter (alleen big endian)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "IA-64 (Itanium) BCJ filter"
-msgstr "IA64-(Itanium-)BCJ-Filter"
+msgstr "IA-64 (Itanium) BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "SPARC BCJ filter"
-msgstr "SPARC-BCJ-Filter"
+msgstr "SPARC BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "RISC-V BCJ filter"
-msgstr "RISC-V-BCJ-Filter"
+msgstr "RISC-V BCJ-filter"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Valid OPTS for all BCJ filters:"
-msgstr "Zulässige Optionen für alle BCJ-Filter:"
+msgstr "Geldige INSTEL voor alle BCJ-filters:"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "start offset for conversions (default=0)"
-msgstr "Startversatz für Konversion (Voreinstellung=0)"
+msgstr "beginpunt voor conversies (standaard=0)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Delta filter; valid OPTS (valid values; default):"
-msgstr "Delta-Filter; zulässige Optionen (gültige Werte; Voreinstellung):"
+msgstr "Delta-filter; geldige INSTEL (geldige waarden; standaard):"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "distance between bytes being subtracted from each other"
-msgstr "Abstand zwischen den Bytes, die voneinander subtrahiert werden"
+msgstr "afstand tussen bytes die van elkaar afgetrokken worden"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "Other options:"
-msgstr "Andere Optionen:"
+msgstr "Andere opties:"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "suppress warnings; specify twice to suppress errors too"
-msgstr "Warnungen unterdrücken; wird diese Option zweimal angegeben, werden auch Fehlermeldungen unterdrückt"
+msgstr "waarschuwingen onderdrukken; -q -q onderdrukt ook fouten"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "be verbose; specify twice for even more verbose"
-msgstr "Ausführlicher Modus; wird diese Option zweimal angegeben, erfolgen noch ausführlichere Ausgaben"
+msgstr "melden wat er gedaan wordt; -v -v geeft nog meer info"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "make warnings not affect the exit status"
-msgstr "Warnungen verändern nicht den Exit-Status"
+msgstr "waarschuwingen de afsluitwaarde niet laten beïnvloeden"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "use machine-parsable messages (useful for scripts)"
-msgstr "Maschinenlesbare Meldungen ausgeben (nützlich für Skripte)"
+msgstr "meldingen in machine-opmaak geven (nuttig voor scripts)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display the total amount of RAM and the currently active memory usage limits, and exit"
-msgstr "Gesamtspeicher (RAM) sowie die gegenwärtig aktive Speicherbedarfsbegrenzung anzeigen und das Programm beenden"
+msgstr "de totale hoeveelheid RAM en de actieve geheugengebruiksgrenzen tonen en stoppen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display the short help (lists only the basic options)"
-msgstr "Kurze Hilfe anzeigen (zeigt nur die grundlegenden Optionen)"
+msgstr "korte hulptekst tonen (met alleen basisopties)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display this long help and exit"
-msgstr "Diese lange Hilfe anzeigen und das Programm beenden"
+msgstr "deze lange hulptekst tonen en stoppen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display this short help and exit"
-msgstr "Diese kurze Hilfe anzeigen und das Programm beenden"
+msgstr "deze korte hulptekst tonen en stoppen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display the long help (lists also the advanced options)"
-msgstr "Die lange Hilfe (und damit auch fortgeschrittene Optionen) anzeigen"
+msgstr "lange hulptekst tonen (met ook geavanceerde opties)"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "display the version number and exit"
-msgstr "Versionsnummer anzeigen und beenden"
+msgstr "versienummer tonen en stoppen"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c src/lzmainfo/lzmainfo.c
 msgid "With no FILE, or when FILE is -, read standard input."
-msgstr "Wenn DATEI nicht angegeben wurde oder DATEI gleich - ist, dann wird aus der Standardeingabe gelesen."
+msgstr "Zonder BESTAND, of wanneer BESTAND '-' is, wordt standaardinvoer gelezen."
 
 #. TRANSLATORS: This message indicates the bug reporting
 #. address for this package. Please add another line saying
@@ -1091,7 +1091,9 @@ msgstr "Wenn DATEI nicht angegeben wurde oder DATEI gleich - ist, dann wird aus 
 #: src/xz/message.c src/lzmainfo/lzmainfo.c
 #, c-format
 msgid "Report bugs to <%s> (in English or Finnish)."
-msgstr "Melden Sie Fehler an <%s> (auf Englisch oder Finnisch)."
+msgstr ""
+"Rapporteer programmagebreken aan <%s> (in het Engels);\n"
+"meld fouten in de vertaling aan <vertaling@vrijschrift.org>."
 
 #. TRANSLATORS: The first %s is the name of this software.
 #. The second <%s> is an URL.
@@ -1099,136 +1101,136 @@ msgstr "Melden Sie Fehler an <%s> (auf Englisch oder Finnisch)."
 #: src/xz/message.c src/lzmainfo/lzmainfo.c
 #, c-format
 msgid "%s home page: <%s>"
-msgstr "%s-Homepage: <%s>"
+msgstr "Webpagina van %s: <%s>"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "THIS IS A DEVELOPMENT VERSION NOT INTENDED FOR PRODUCTION USE."
-msgstr "DIES IST EINE NICHT FÜR DEN PRODUKTIVBETRIEB GEEIGNETE ENTWICKLERVERSION."
+msgstr "DIT IS een ONTWIKKELINGSVERSIE -- NIET BEDOELD voor WERKELIJK GEBRUIK."
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 #, c-format
 msgid "Filter chains are set using the --filters=FILTERS or --filters1=FILTERS ... --filters9=FILTERS options. Each filter in the chain can be separated by spaces or '--'. Alternatively a preset %s can be specified instead of a filter chain."
-msgstr "Filterketten werden durch Setzen der Optionen --filters=FILTER oder --filters1=FILTER … --filters9=FILTER definiert. Die Filter können innerhalb der Kette durch Leerzeichen oder »--« getrennt werden. Alternativ kann eine Voreinstellung %s anstelle einer Filterkette verwendet werden."
+msgstr "Filterketens worden ingesteld met de opties '--filters=FILTERS' of '--filters1=FILTERS ... --filters9=FILTERS'. Elk filter in de keten kan gescheiden worden door spaties of '--'. In plaats van een filterketen kan ook een voorinstelling %s gegeven worden."
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/xz/message.c
 msgid "The supported filters and their options are:"
-msgstr "Folgende Filterkettem und Filteroptionen werden unterstützt:"
+msgstr "Ondersteunde filters en hun opties zijn:"
 
 #: src/xz/options.c src/liblzma/common/string_conversion.c
 msgid "Options must be 'name=value' pairs separated with commas"
-msgstr "Optionen müssen in der Form »Name=Wert« gegeben werden, getrennt durch Kommata"
+msgstr "Opties moeten 'naam=waarde'-paren zijn, gescheiden door komma's"
 
 #: src/xz/options.c
 #, c-format
 msgid "%s: Invalid option name"
-msgstr "%s: Ungültiger Optionsname"
+msgstr "%s: Ongeldige optienaam"
 
 #: src/xz/options.c src/liblzma/common/string_conversion.c
 msgid "Invalid option value"
-msgstr "Ungültiger Optionswert"
+msgstr "Ongeldige optiewaarde"
 
 #: src/xz/options.c
 #, c-format
 msgid "Unsupported LZMA1/LZMA2 preset: %s"
-msgstr "LZMA1/LZMA2-Voreinstellung wird nicht unterstützt: %s"
+msgstr "Niet-ondersteunde LZMA1/LZMA2-voorinstelling: %s"
 
 #: src/xz/options.c src/liblzma/common/string_conversion.c
 msgid "The sum of lc and lp must not exceed 4"
-msgstr "Die Summe aus lc und lp darf höchstens 4 sein"
+msgstr "De som van lc en lp mag niet groter zijn dan 4"
 
 #: src/xz/suffix.c
 #, c-format
 msgid "%s: Filename has an unknown suffix, skipping"
-msgstr "%s: Dateiname hat unbekanntes Suffix, wird übersprungen"
+msgstr "%s: Bestand heeft onbekende extensie -- overgeslagen"
 
 #: src/xz/suffix.c
 #, c-format
 msgid "%s: File already has '%s' suffix, skipping"
-msgstr "%s: Datei hat bereits das Suffix »%s«, wird übersprungen"
+msgstr "%s: Bestand heeft al '%s'-extensie -- overgeslagen"
 
 #: src/xz/suffix.c
 #, c-format
 msgid "%s: Invalid filename suffix"
-msgstr "%s: Ungültige Dateiendung"
+msgstr "%s: Ongeldige bestandsnaamextensie"
 
 #: src/xz/util.c src/liblzma/common/string_conversion.c
 msgid "Value is not a non-negative decimal integer"
-msgstr "Wert ist keine nicht-negative dezimale Ganzzahl"
+msgstr "Waarde is geen niet-negatief tientallig geheel getal"
 
 #: src/xz/util.c
 #, c-format
 msgid "%s: Invalid multiplier suffix"
-msgstr "%s: Ungültige Einheit"
+msgstr "%s: Ongeldig vermenigvuldigingsachtervoegsel"
 
 #: src/xz/util.c
 msgid "Valid suffixes are 'KiB' (2^10), 'MiB' (2^20), and 'GiB' (2^30)."
-msgstr "Gültige Einheiten sind »KiB« (2^10), »MiB« (2^20) und »GiB« (2^30)."
+msgstr "Geldige achtervoegsels zijn 'KiB' (2^10), 'MiB' (2^20), and 'GiB' (2^30)."
 
 #: src/xz/util.c
 #, c-format
 msgid "Value of the option '%s' must be in the range [%<PRIu64>, %<PRIu64>]"
-msgstr "Wert der Option »%s« muss im Bereich [%<PRIu64>, %<PRIu64>] sein"
+msgstr "Waarde van optie '%s' moet in het bereik [%<PRIu64>, %<PRIu64>] liggen"
 
 #: src/xz/util.c
 msgid "Compressed data cannot be read from a terminal"
-msgstr "Komprimierte Daten können nicht vom Terminal gelesen werden"
+msgstr "Gecomprimeerde gegevens kunnen niet van een terminal gelezen worden"
 
 #: src/xz/util.c
 msgid "Compressed data cannot be written to a terminal"
-msgstr "Komprimierte Daten können nicht auf das Terminal geschrieben werden"
+msgstr "Gecomprimeerde gegevens kunnen niet naar een terminal geschreven worden"
 
 #: src/lzmainfo/lzmainfo.c
 #, c-format
 msgid "Usage: %s [--help] [--version] [FILE]...\n"
-msgstr "Aufruf: %s [--help] [--version] [DATEI] …\n"
+msgstr "Gebruik:  %s [--help] [--version] [BESTAND...]\n"
 
 #. This is word wrapped at spaces. The Unicode character U+00A0 works as a non-breaking space. Tab (\t) is interpret as a zero-width space (the tab itself is not displayed); U+200B is NOT supported. Manual word wrapping with \n is supported but requires care.
 #: src/lzmainfo/lzmainfo.c
 msgid "Show information stored in the .lzma file header."
-msgstr "Im .lzma-Dateikopf gespeicherte Informationen anzeigen."
+msgstr "Toont informatie uit de .lzma-bestandskop."
 
 #: src/lzmainfo/lzmainfo.c
 msgid "File is too small to be a .lzma file"
-msgstr "Die Datei ist zu klein, um eine .lzma-Datei zu sein"
+msgstr "Bestand is te klein om een .lzma-bestand te zijn"
 
 #: src/lzmainfo/lzmainfo.c
 msgid "Not a .lzma file"
-msgstr "Keine .lzma-Datei"
+msgstr "Geen .lzma-bestand"
 
 #: src/common/tuklib_exit.c
 msgid "Writing to standard output failed"
-msgstr "Schreiben in die Standardausgabe fehlgeschlagen"
+msgstr "Schrijven naar standaarduitvoer is mislukt"
 
 #: src/common/tuklib_exit.c
 msgid "Unknown error"
-msgstr "Unbekannter Fehler"
+msgstr "Onbekende fout"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Unsupported preset"
-msgstr "Voreinstellung wird nicht unterstützt"
+msgstr "Niet-ondersteunde voorinstelling"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Unsupported flag in the preset"
-msgstr "Nicht unterstützter Schalter in der Voreinstellung"
+msgstr "Niet-ondersteunde vlag in voorinstelling"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Unknown option name"
-msgstr "Unbekannter Optionsname"
+msgstr "Ongeldige optienaam"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Option value cannot be empty"
-msgstr "Optionswert darf nicht leer sein"
+msgstr "Optiewaarde mag niet leeg zijn"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Value out of range"
-msgstr "Wert ist außerhalb des zulässigen Bereichs"
+msgstr "Waarde ligt buiten bereik"
 
 #: src/liblzma/common/string_conversion.c
 msgid "This option does not support any multiplier suffixes"
-msgstr "Diese Option unterstützt keine Einheiten-Endungen"
+msgstr "Deze optie accepteert geen vermenigvuldigingsachtervoegsels"
 
 #. TRANSLATORS: Don't translate the
 #. suffixes "KiB", "MiB", or "GiB"
@@ -1236,32 +1238,32 @@ msgstr "Diese Option unterstützt keine Einheiten-Endungen"
 #. untranslated suffixes.
 #: src/liblzma/common/string_conversion.c
 msgid "Invalid multiplier suffix (KiB, MiB, or GiB)"
-msgstr "Ungültige Einheit (KiB, MiB oder GiB)"
+msgstr "Ongeldig vermenigvuldigingsachtervoegsel (KiB, MiB, of GiB)"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Unknown filter name"
-msgstr "Unbekannter Filtername"
+msgstr "Onbekende filternaam"
 
 #: src/liblzma/common/string_conversion.c
 msgid "This filter cannot be used in the .xz format"
-msgstr "Dieser Filter kann nicht im .xz-Format verwendet werden"
+msgstr "Dit filter kan niet gebruikt worden met de .xz-indeling"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Memory allocation failed"
-msgstr "Speicherzuweisung ist fehlgeschlagen"
+msgstr "Onvoldoende geheugen beschikbaar"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Empty string is not allowed, try '6' if a default value is needed"
-msgstr "Leere Zeichenkette ist nicht erlaubt; versuchen Sie »6«, wenn der Vorgabewert erwünscht ist"
+msgstr "Lege tekenreeks is niet toegestaan; probeer '6' als een standaardwaarde nodig is"
 
 #: src/liblzma/common/string_conversion.c
 msgid "The maximum number of filters is four"
-msgstr "Maximal vier Filter sind möglich"
+msgstr "Het maximum aantal filters is vier"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Filter name is missing"
-msgstr "Filtername fehlt"
+msgstr "Ontbrekende filternaam"
 
 #: src/liblzma/common/string_conversion.c
 msgid "Invalid filter chain ('lzma2' missing at the end?)"
-msgstr "Unzulässige Filterkette (»lzma2« fehlt am Ende?)"
+msgstr "Ongeldige filterketen (ontbreekt 'lzma2' aan het eind?)"

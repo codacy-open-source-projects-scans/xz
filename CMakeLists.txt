@@ -85,6 +85,7 @@ include(CheckSymbolExists)
 include(CheckStructHasMember)
 include(CheckCSourceCompiles)
 include(CheckCCompilerFlag)
+include(CheckLinkerFlag)
 include(cmake/tuklib_large_file_support.cmake)
 include(cmake/tuklib_integer.cmake)
 include(cmake/tuklib_cpucores.cmake)
@@ -160,6 +161,12 @@ set(CMAKE_C_STANDARD 11)
 
 # On Apple OSes, don't build executables as bundles:
 set(CMAKE_MACOSX_BUNDLE OFF)
+
+# The targets defined here don't support compiling as a unity build. Encoder
+# and decoder source files define different types with the same name, and some
+# internal header files don't have header guards leading to redeclaration
+# errors.
+set(CMAKE_UNITY_BUILD OFF)
 
 # Set CMAKE_INSTALL_LIBDIR and friends. This needs to be done before
 # the LOCALEDIR_DEFINITION workaround below.
@@ -280,7 +287,7 @@ endif()
 
 # _GNU_SOURCE and such definitions. This specific macro is special since
 # it also adds the definitions to CMAKE_REQUIRED_DEFINITIONS.
-tuklib_use_system_extensions(ALL)
+tuklib_use_system_extensions()
 
 # Check for large file support. It's required on some 32-bit platforms and
 # even on 64-bit MinGW-w64 to get 64-bit off_t. This can be forced off on
@@ -354,6 +361,35 @@ if(XZ_NLS)
                             "Install gettext tools or set XZ_NLS=OFF.")
     endif()
 
+    if(WIN32)
+        # The command line tools use UTF-8 on native Windows.
+        # Non-ASCII characters display correctly only when
+        # using UCRT and gettext-runtime >= 0.23.1.
+        check_c_source_compiles(
+                "#define WIN32_LEAN_AND_MEAN
+                #include <windows.h>
+                #include <libintl.h>
+
+                #ifndef _UCRT
+                #error \"Not UCRT\"
+                #endif
+
+                #if LIBINTL_VERSION < 0x001701
+                #error \"gettext-runtime < 0.23.1\"
+                #endif
+
+                int main(void) { return 0; }
+            "
+            USING_UCRT_AND_RECENT_GETTEXT)
+        if(NOT USING_UCRT_AND_RECENT_GETTEXT)
+            message(FATAL_ERROR "Native language support (NLS) was enabled "
+                                "but it requires UCRT and "
+                                "gettext-runtime >= 0.23.1. To build with "
+                                "MSVCRT or old gettext-runtime, "
+                                "set XZ_NLS=OFF.")
+        endif()
+    endif()
+
     # Warn if translated man pages are missing.
     if(UNIX AND NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/po4a/man")
         message(WARNING "Native language support (NLS) was enabled "
@@ -399,6 +435,8 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU|Clang)
                 -Wmissing-prototypes
                 -Wmissing-declarations
                 -Wredundant-decls
+                -Wimplicit-fallthrough
+                -Wimplicit-fallthrough=5
 
                 -Wc99-compat
                 -Wc11-extensions
@@ -447,7 +485,7 @@ if(NOT WIN32)
     # auto      Autodetect between no, generic, and linux
     # yes       Force on by autodetecting between linux and generic
     # no        Disable symbol versioning
-    # generic   FreeBSD, most Linux/glibc systems, and GNU/Hurd
+    # generic   FreeBSD, some Linux/glibc systems, and GNU/Hurd
     # linux     Linux/glibc with extra symbol versions for compatibility
     #           with binaries that have been linked against a liblzma version
     #           that has been patched with "xz-5.2.2-compat-libs.patch" from
@@ -504,7 +542,7 @@ symbol versioning (${SUPPORTED_SYMBOL_VERSIONING_VARIANTS})")
             # somewhere in the string).
             #
             # NVIDIA HPC Compiler doesn't support symbol versioning but
-            # it uses the linked from the system so the linker script
+            # it uses the linker from the system so the linker script
             # can still be used to get the generic symbol versioning.
             set(SYMBOL_VERSIONING "generic")
 
@@ -518,6 +556,21 @@ symbol versioning (${SUPPORTED_SYMBOL_VERSIONING_VARIANTS})")
                XZ_SYMBOL_VERSIONING STREQUAL "yes")
             set(SYMBOL_VERSIONING "generic")
         endif()
+    endif()
+
+    if(NOT SYMBOL_VERSIONING STREQUAL "no")
+        # If features are disabled in liblzma, some symbols may be missing.
+        # LLVM's lld defaults to --no-undefined-version and the build breaks
+        # if not all symbols in the version script exist. That is good for
+        # catching errors like typos, but in our case the downside is too big.
+        # Avoid the problem by using --undefined-version if the linker
+        # supports it.
+        #
+        # GNU ld has had --no-undefined-version for a long time but it's not
+        # the default. The opposite option --undefined-version was only added
+        # in 2022, thus we must use --undefined-version conditionally.
+        check_linker_flag(C "-Wl,--undefined-version"
+                          HAVE_LINKER_FLAG_UNDEFINED_VERSION)
     endif()
 endif()
 
@@ -1326,6 +1379,13 @@ if(XZ_ARM64_CRC32)
         check_symbol_exists(getauxval sys/auxv.h HAVE_GETAUXVAL)
         tuklib_add_definition_if(liblzma HAVE_GETAUXVAL)
 
+        # With getauxval() we also need HWCAP_CRC32 which was
+        # added in glibc 2.24.
+        if(HAVE_GETAUXVAL)
+            check_symbol_exists(HWCAP_CRC32 sys/auxv.h HAVE_HWCAP_CRC32)
+            tuklib_add_definition_if(liblzma HAVE_HWCAP_CRC32)
+        endif()
+
         # elf_aux_info() is supported on FreeBSD and OpenBSD >= 7.6.
         check_symbol_exists(elf_aux_info sys/auxv.h HAVE_ELF_AUX_INFO)
         tuklib_add_definition_if(liblzma HAVE_ELF_AUX_INFO)
@@ -1443,6 +1503,9 @@ elseif(BUILD_SHARED_LIBS AND SYMBOL_VERSIONING STREQUAL "linux")
     # NOTE: Set it explicitly to 1 to make it clear that versioning is
     # done unconditionally in the C files.
     target_compile_definitions(liblzma PRIVATE HAVE_SYMBOL_VERSIONS_LINUX=1)
+    if(HAVE_LINKER_FLAG_UNDEFINED_VERSION)
+        target_link_options(liblzma PRIVATE "-Wl,--undefined-version")
+    endif()
     target_link_options(liblzma PRIVATE
         "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_linux.map"
     )
@@ -1450,6 +1513,9 @@ elseif(BUILD_SHARED_LIBS AND SYMBOL_VERSIONING STREQUAL "linux")
         LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_linux.map"
     )
 elseif(BUILD_SHARED_LIBS AND SYMBOL_VERSIONING STREQUAL "generic")
+    if(HAVE_LINKER_FLAG_UNDEFINED_VERSION)
+        target_link_options(liblzma PRIVATE "-Wl,--undefined-version")
+    endif()
     target_link_options(liblzma PRIVATE
         "-Wl,--version-script=${CMAKE_CURRENT_SOURCE_DIR}/src/liblzma/liblzma_generic.map"
     )
@@ -1458,12 +1524,57 @@ elseif(BUILD_SHARED_LIBS AND SYMBOL_VERSIONING STREQUAL "generic")
     )
 endif()
 
+# Calculate Libtool-compatible Mach-O versions for Apple OSes.
+# Switching from CMake's or Meson's default Mach-O versioning style to
+# GNU Libtool style is always a backward compatible change because the
+# Libtool style always results in higher Mach-O version values.
+#
+# The other way would be a breaking change, and switching from Autotools
+# to CMake used to result in "Incompatible library version" error from the
+# dynamic linker ("dyld") when trying to run existing executables. This
+# happened because the Mach-O current_version in the CMake-built library
+# was less than the compatibility_version stored in the executable.
+#
+# Example: If on GNU/Linux one had libfoo.so.5.6.7, on macOS one would
+# have libfoo.5.dylib containing the following Mach-O versions:
+#
+#                compatibility_version    current_version
+#     Libtool    12.0.0                   12.7.0
+#     CMake      5.0.0                    5.6.7
+#     Meson      5.0.0                    5.0.0
+#
+# Apple's docs say that the major version is encoded in the library filename,
+# and the Mach-O version fields are for tracking backward compatible changes
+# (minor versions). The default Mach-O versioning styles in CMake and
+# Meson don't store the minor version in the compatibility_version though
+# but Libtool does (using its own idiosyncratic encoding). In practice the
+# lack of minor ABI version tracking doesn't matter much; it's the
+# compatibility between the build systems that counts.
+#
+# It's unclear how much this matters in 2024. It might be that the
+# dynamic linker in macOS >= 12 doesn't enforce the version checks.
+# But this is a simple and safe change so it's fine to do it anyway.
+#
+# Apple docs:
+# https://developer.apple.com/library/archive/documentation/DeveloperTools/Conceptual/DynamicLibraries/100-Articles/DynamicLibraryDesignGuidelines.html
+#
+# This change was made in XZ Utils 5.7.1alpha.
+#
+# * * * * *
+#
+# At least for now the xz package versioning matches the rules used for
+# shared library versioning (excluding development releases) so it is
+# fine to use the package version when setting the liblzma ABI version.
+math(EXPR LIBLZMA_MACHO_COMPATIBILITY_VERSION
+          "${xz_VERSION_MAJOR} + ${xz_VERSION_MINOR} + 1")
+set(LIBLZMA_MACHO_CURRENT_VERSION
+    "${LIBLZMA_MACHO_COMPATIBILITY_VERSION}.${xz_VERSION_PATCH}")
+
 set_target_properties(liblzma PROPERTIES
-    # At least for now the package versioning matches the rules used for
-    # shared library versioning (excluding development releases) so it is
-    # fine to use the package version here.
     SOVERSION "${xz_VERSION_MAJOR}"
     VERSION "${xz_VERSION}"
+    MACHO_COMPATIBILITY_VERSION "${LIBLZMA_MACHO_COMPATIBILITY_VERSION}"
+    MACHO_CURRENT_VERSION "${LIBLZMA_MACHO_CURRENT_VERSION}"
 
     # The name liblzma a mess because in many places "lib" is just a prefix
     # and not part of the actual name. (Don't name a new library this way!)
@@ -1481,8 +1592,8 @@ set_target_properties(liblzma PROPERTIES
     # add "lib" but on Cygwin and MSYS2 the naming will be correct too.
     #
     # On Windows, CMake uses the "lib" prefix with MinGW-w64 but not with
-    # other toolchains. Those those need to be handled specially to get
-    # the DLL file named liblzma.dll instead of lzma.dll.
+    # other toolchains. Those need to be handled specially to get the DLL
+    # file named liblzma.dll instead of lzma.dll.
     OUTPUT_NAME "lzma"
 )
 
@@ -1499,7 +1610,7 @@ endif()
 
 # Create liblzma-config-version.cmake.
 #
-# FIXME: SameMajorVersion is correct for stable releases but it is wrong
+# NOTE: SameMajorVersion is correct for stable releases but it is wrong
 # for development releases where each release may have incompatible changes.
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
@@ -1858,6 +1969,7 @@ if(HAVE_DECODERS)
 
     foreach(XZDEC ${XZDEC_TOOLS})
         add_executable("${XZDEC}"
+            src/common/my_landlock.h
             src/common/sysdefs.h
             src/common/tuklib_common.h
             src/common/tuklib_config.h
@@ -1933,8 +2045,12 @@ if(XZ_TOOL_LZMAINFO AND HAVE_DECODERS)
         src/common/sysdefs.h
         src/common/tuklib_common.h
         src/common/tuklib_config.h
+        src/common/tuklib_mbstr.h
         src/common/tuklib_mbstr_nonprint.c
         src/common/tuklib_mbstr_nonprint.h
+        src/common/tuklib_mbstr_width.c
+        src/common/tuklib_mbstr_wrap.c
+        src/common/tuklib_mbstr_wrap.h
         src/common/tuklib_exit.c
         src/common/tuklib_exit.h
         src/common/tuklib_gettext.h
@@ -1991,6 +2107,7 @@ option(XZ_TOOL_XZ "Build and install the xz command line tool" ON)
 
 if(XZ_TOOL_XZ)
     add_executable(xz
+        src/common/my_landlock.h
         src/common/mythread.h
         src/common/sysdefs.h
         src/common/tuklib_common.h
@@ -2083,8 +2200,13 @@ this many MiB of RAM if xz cannot determine the amount at runtime")
     tuklib_progname(xz)
     tuklib_mbstr(xz)
 
-    check_symbol_exists(optreset getopt.h HAVE_OPTRESET)
-    tuklib_add_definition_if(xz HAVE_OPTRESET)
+    if(HAVE_GETOPT_LONG)
+        check_symbol_exists(optreset getopt.h HAVE_OPTRESET)
+        tuklib_add_definition_if(xz HAVE_OPTRESET)
+    endif()
+
+    check_symbol_exists(getrlimit sys/resource.h HAVE_GETRLIMIT)
+    tuklib_add_definition_if(xz HAVE_GETRLIMIT)
 
     check_symbol_exists(posix_fadvise fcntl.h HAVE_POSIX_FADVISE)
     tuklib_add_definition_if(xz HAVE_POSIX_FADVISE)
