@@ -2380,51 +2380,49 @@ xzdiff, xzgrep, xzmore, xzless, and their symlinks" ON)
     set(XZ_POSIX_SHELL "${POSIX_SHELL_DEFAULT}" CACHE STRING
         "Shell to use for scripts (xzgrep and others)")
 
-    # Guess the extra path to add from XZ_POSIX_SHELL. Autotools-based build
-    # has a separate option --enable-path-for-scripts=PREFIX but this is
-    # enough for Solaris.
-    set(enable_path_for_scripts)
-    get_filename_component(POSIX_SHELL_DIR "${XZ_POSIX_SHELL}" DIRECTORY)
+    if(ENABLE_SCRIPTS)
+        # Guess the extra path to add from XZ_POSIX_SHELL. Autotools-based
+        # build has a separate option --enable-path-for-scripts=PREFIX but
+        # this is enough for Solaris.
+        set(enable_path_for_scripts)
+        get_filename_component(POSIX_SHELL_DIR "${XZ_POSIX_SHELL}" DIRECTORY)
 
-    if(NOT POSIX_SHELL_DIR MATCHES "^/bin$|^/usr/bin$")
-        set(enable_path_for_scripts "PATH=${POSIX_SHELL_DIR}:\$PATH")
-    endif()
+        if(NOT POSIX_SHELL_DIR MATCHES "^/bin$|^/usr/bin$")
+            set(enable_path_for_scripts "PATH=${POSIX_SHELL_DIR}:\$PATH")
+        endif()
 
-    set(XZDIFF_LINKS xzcmp)
-    set(XZGREP_LINKS xzegrep xzfgrep)
-    set(XZMORE_LINKS)
-    set(XZLESS_LINKS)
+        set(XZDIFF_LINKS xzcmp)
+        set(XZGREP_LINKS xzegrep xzfgrep)
+        set(XZMORE_LINKS)
+        set(XZLESS_LINKS)
 
-    if(XZ_TOOL_SYMLINKS_LZMA)
-        list(APPEND XZDIFF_LINKS lzdiff lzcmp)
-        list(APPEND XZGREP_LINKS lzgrep lzegrep lzfgrep)
-        list(APPEND XZMORE_LINKS lzmore)
-        list(APPEND XZLESS_LINKS lzless)
-    endif()
+        if(XZ_TOOL_SYMLINKS_LZMA)
+            list(APPEND XZDIFF_LINKS lzdiff lzcmp)
+            list(APPEND XZGREP_LINKS lzgrep lzegrep lzfgrep)
+            list(APPEND XZMORE_LINKS lzmore)
+            list(APPEND XZLESS_LINKS lzless)
+        endif()
 
-    set(xz "xz")
-    set(POSIX_SHELL "${XZ_POSIX_SHELL}")
+        set(xz "xz")
+        set(POSIX_SHELL "${XZ_POSIX_SHELL}")
 
-    foreach(S xzdiff xzgrep xzmore xzless)
-        configure_file("src/scripts/${S}.in" "${S}"
-               @ONLY
-               NEWLINE_STYLE LF
-               FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
-                                GROUP_READ GROUP_EXECUTE
-                                WORLD_READ WORLD_EXECUTE)
+        foreach(S xzdiff xzgrep xzmore xzless)
+            configure_file("src/scripts/${S}.in" "${S}"
+                   @ONLY
+                   NEWLINE_STYLE LF
+                   FILE_PERMISSIONS OWNER_READ OWNER_WRITE OWNER_EXECUTE
+                                    GROUP_READ GROUP_EXECUTE
+                                    WORLD_READ WORLD_EXECUTE)
 
-        if(ENABLE_SCRIPTS)
             install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/${S}"
                     DESTINATION "${CMAKE_INSTALL_BINDIR}"
                     COMPONENT scripts_Runtime)
-        endif()
-    endforeach()
+        endforeach()
 
-    unset(xz)
-    unset(POSIX_SHELL)
-    unset(enable_path_for_scripts)
+        unset(xz)
+        unset(POSIX_SHELL)
+        unset(enable_path_for_scripts)
 
-    if(ENABLE_SCRIPTS)
         my_install_symlinks(scripts_Runtime "${CMAKE_INSTALL_BINDIR}"
                             xzdiff "" "${XZDIFF_LINKS}")
 
