@@ -442,7 +442,6 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU|Clang)
                 -Wc11-extensions
                 -Wc2x-compat
                 -Wc2x-extensions
-                -Wpre-c2x-compat
                 -Warray-bounds-pointer-arithmetic
                 -Wassign-enum
                 -Wconditional-uninitialized

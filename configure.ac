@@ -1353,7 +1353,6 @@ AS_IF([test "$GCC" = yes], [
 			-Wc11-extensions \
 			-Wc2x-compat \
 			-Wc2x-extensions \
-			-Wpre-c2x-compat \
 			-Warray-bounds-pointer-arithmetic \
 			-Wassign-enum \
 			-Wconditional-uninitialized \
