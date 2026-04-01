@@ -404,11 +404,13 @@ endif()
 
 
 # Add warning options for GCC or Clang. Keep this in sync with configure.ac.
+# Check for MSVC so that these won't be added with clang-cl with which -Wall
+# means -Weverything.
 #
 # NOTE: add_compile_options() doesn't affect the feature checks;
 # only the new targets being created use these flags. Thus
 # the -Werror usage in checks won't be break because of these.
-if(CMAKE_C_COMPILER_ID MATCHES GNU|Clang)
+if(NOT MSVC AND CMAKE_C_COMPILER_ID MATCHES GNU|Clang)
     foreach(OPT -Wall
                 -Wextra
                 -Wvla
@@ -464,6 +466,23 @@ if(CMAKE_C_COMPILER_ID MATCHES GNU|Clang)
             add_compile_options("${OPT}")
         endif()
     endforeach()
+endif()
+
+# Enable more warnings with MSVC and clang-cl but disable a few too:
+#   - C4100: unused function arguments
+#   - C4127: conditional expression is a constant
+#   - C4200: C99/C11 flexible array member
+#   - C4244: Integer conversion
+#   - C4267: Integer conversion
+#   - C4996: getenv() and a few other functions
+#
+# With clang-cl, some warnings have to be disabled with clang-style options.
+if(MSVC)
+    add_compile_options(/W4 /wd4100 /wd4127 /wd4200 /wd4244 /wd4267 /wd4996)
+    if(CMAKE_C_COMPILER_ID MATCHES Clang)
+        add_compile_options(-Wno-unused-parameter
+                            -Wno-deprecated-declarations)
+    endif()
 endif()
 
 
